@@ -96,6 +96,10 @@ public class MyBot : IChessBot
 	}
 	int min(Board board, int depth)
 	{
+		if (board.IsInCheckmate())
+			return 9999;
+		if (board.IsRepeatedPosition() || board.IsDraw())
+			return 0;
 		if (depth == 0)
 		{
 			return evaluation(board);
@@ -115,6 +119,10 @@ public class MyBot : IChessBot
 	}
 	int max(Board board, int depth)
 	{
+		if (board.IsInCheckmate())
+			return -9999;
+		if (board.IsRepeatedPosition() || board.IsDraw())
+			return 0;
 		if (depth == 0)
 		{
 			return evaluation(board);
