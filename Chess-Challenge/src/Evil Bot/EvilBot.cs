@@ -1,5 +1,7 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.Diagnostics.Metrics;
+using System.Reflection;
 
 namespace ChessChallenge.Example
 {
@@ -7,6 +9,8 @@ namespace ChessChallenge.Example
 	// Plays randomly otherwise.
 	public class EvilBot : IChessBot
 	{
+		int counter = 0;
+
 		int[] pieceValues = { 0, 1, 3, 3, 5, 9, 999 };
 
 		public Move Think(Board board, Timer timer)
@@ -40,7 +44,7 @@ namespace ChessChallenge.Example
 					eval += pieceValues[(int)piece.PieceType];
 					if (piece.IsPawn)
 					{
-						eval += 0.01f * (piece.Square.Rank - 2);
+						eval += 0.01f * (piece.Square.Rank - 1);
 					}
 				}
 				else
@@ -48,7 +52,7 @@ namespace ChessChallenge.Example
 					eval -= pieceValues[(int)piece.PieceType];
 					if (piece.IsPawn)
 					{
-						eval += 0.01f * (7 - piece.Square.Rank);
+						eval += 0.01f * (6 - piece.Square.Rank);
 					}
 				}
 
@@ -57,6 +61,7 @@ namespace ChessChallenge.Example
 		}
 		Move bestMove(Board board, int depth, bool playerToMove)
 		{
+			counter = 0;
 			Move bestmove = board.GetLegalMoves()[0];
 			float curreval = evaluation(board);
 			int sign = playerToMove ? -1 : 1;
@@ -89,6 +94,8 @@ namespace ChessChallenge.Example
 					board.UndoMove(move);
 				}
 			}
+			Console.WriteLine("old + " + counter);
+
 			return bestmove;
 		}
 		/// <summary>
@@ -102,6 +109,7 @@ namespace ChessChallenge.Example
 		/// <returns></returns>
 		float minmax(Board board, int depth, float alpha, float beta, bool isMaximizingPlayer)
 		{
+			counter++;
 			if (board.IsRepeatedPosition() || board.IsDraw())
 				return 0;
 			if (depth == 0)

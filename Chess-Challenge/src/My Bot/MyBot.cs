@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq.Expressions;
+using System.Diagnostics.Metrics;
 
 /// <summary>
 /// 
@@ -15,6 +16,7 @@ using System.Linq.Expressions;
 /// </summary>
 public class MyBot : IChessBot
 {
+	int counter = 0;
 	int[,] knightMatrix = {
 		{1, 2, 3, 3, 3, 3, 2, 1},
 		{2, 4, 5, 5, 5, 5, 4, 2},
@@ -120,6 +122,7 @@ public class MyBot : IChessBot
 	}
 	Move bestMove(Board board, int depth, bool playerToMove)
 	{
+		counter = 0;
 		Move bestmove = board.GetLegalMoves()[0];
 		float curreval = evaluation(board);
 		int sign = playerToMove ? -1 : 1;
@@ -152,6 +155,7 @@ public class MyBot : IChessBot
 				board.UndoMove(move);
 			}
 		}
+		Console.WriteLine(counter);
 		return bestmove;
 	}
 	/// <summary>
@@ -165,6 +169,7 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	float minmax(Board board, int depth, float alpha, float beta, bool isMaximizingPlayer)
 	{
+		counter++;
 		if (board.IsRepeatedPosition() || board.IsDraw())
 			return 0;
 		if (depth == 0)
