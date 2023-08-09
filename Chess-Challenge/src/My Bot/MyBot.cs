@@ -14,7 +14,7 @@ using System;
 /// </summary>
 public class MyBot : IChessBot
 {
-	int counter = 0;
+	List<int> counters = new List<int>();
 	int evalCounter = 0;
 	int[,] knightMatrix = {
 		{0, -5, 1, 1, 1, 1, -5, 0},
@@ -44,11 +44,21 @@ public class MyBot : IChessBot
 			return -5;
 		return kingMatrix[y, x];
 	}
+	int depth = 3;
 
 	public Move Think(Board board, Timer timer)
 	{
 		Move[] moves = board.GetLegalMoves();
-		return bestMove(board, 3, board.IsWhiteToMove);
+		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
+		if(counters.Count > 3)
+		{
+			int sum = (counters[^1] + counters[^2] + counters[^3]) / 3;
+			if (sum < 8000)
+				depth += 2;
+			if (sum > 500000 && depth > 3)
+				depth -= 2;
+		}*/
+		return bestMove(board, depth, board.IsWhiteToMove);
 	}
 
 	int[] pieceValues = { 0, 100, 300, 300, 500, 900, 99999 };
@@ -109,11 +119,9 @@ public class MyBot : IChessBot
 	}
 
 
-	Move previousBestMove;
-
 	Move bestMove(Board board, int depth, bool playerToMove)
 	{
-		counter = 0;
+		counters.Add(0);
 		evalCounter = 0;
 		Move bestmove = board.GetLegalMoves()[0];
 		int color = playerToMove ? 1 : -1;
@@ -133,7 +141,7 @@ public class MyBot : IChessBot
 			board.UndoMove(move);
 		}
 
-		Console.WriteLine(counter);
+		Console.WriteLine(counters[^1]);
 		Console.WriteLine(evalCounter);
 		return bestmove;
 	}
@@ -146,9 +154,7 @@ public class MyBot : IChessBot
 		if (move.IsCapture)
 		{
 			// Use MVV-LVA heuristic
-			int victimValue = pieceValues[(int)move.CapturePieceType];
-			int attackerValue = pieceValues[(int)move.MovePieceType];
-			score += 1000 * (victimValue - attackerValue);
+			score += 1000 * (pieceValues[(int)move.CapturePieceType] - pieceValues[(int)move.MovePieceType]);
 		}
 		if (move.IsPromotion)
 			score += 500;
@@ -161,6 +167,7 @@ public class MyBot : IChessBot
 
 		return score;
 	}
+
 	/*
 	int StaticExchangeEvaluation(Move move, Board board)
 	{
@@ -227,7 +234,7 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	float negamax(Board board, int depth, float alpha, float beta, int color)
 	{
-		counter++;
+		counters[^1]++;
 		if (board.IsRepeatedPosition() || board.IsDraw())
 			return 0;
 		if (depth == 0)
