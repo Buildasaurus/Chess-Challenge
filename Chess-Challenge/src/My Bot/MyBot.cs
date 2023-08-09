@@ -37,27 +37,25 @@ public class MyBot : IChessBot
 		{3 ,4 ,5 ,5 ,5 ,5 ,4 ,3},
 		{3 ,4 ,4 ,4 ,4 ,4 ,4 ,3},
 		{3, 3, -4, 3, 3, -4, 3, 3}};
-	int getKingMatrix(int y, int x)
-	{
-		if (y>1)
-		{
-			return -5;
-		}
-		return kingMatrix[y, x];
-	}
 	int[,] kingMatrix = {
 		{3, 14, 12, 0, 0, 1, 15, 3},
 		{1, 1, 1, 0, 0, 1, 1, 1}};
+	int getKingMatrix(int y, int x)
+	{
+		if (y>1)
+			return -5;
+		return kingMatrix[y, x];
+	}
 
-
+	public Move Think(Board board, Timer timer)
+	{
+		Move[] moves = board.GetLegalMoves();
+		return bestMove(board, 3, board.IsWhiteToMove);
+	}
 
 	int[] pieceValues = { 0, 100, 300, 300, 500, 900, 99999 };
 
-	public Move Think(Board board, Timer timer)
-    {
-        Move[] moves = board.GetLegalMoves();
-        return bestMove(board, 3, board.IsWhiteToMove);
-	}
+
 	float evaluation(Board board)
 	{
 		evalCounter++;
@@ -120,18 +118,16 @@ public class MyBot : IChessBot
 		counter = 0;
 		evalCounter = 0;
 		Move bestmove = board.GetLegalMoves()[0];
-		float curreval = evaluation(board);
-		int sign = playerToMove ? -1 : 1;
-		float bestEval = 1000000 * sign;
-		// Get and sort the legal moves
+		int color = playerToMove ? 1 : -1;
+		float bestEval = -1000000;
 		Move[] legalmoves = board.GetLegalMoves();
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 
 		foreach (Move move in legalmoves)
 		{
 			board.MakeMove(move);
-			float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
-			if ((playerToMove && eval > bestEval) || (!playerToMove && eval < bestEval))
+			float eval = -negamax(board, depth, -1000000, 1000000, -color);
+			if (eval > bestEval)
 			{
 				bestEval = eval;
 				bestmove = move;
@@ -143,6 +139,7 @@ public class MyBot : IChessBot
 		Console.WriteLine(evalCounter);
 		return bestmove;
 	}
+
 	int MoveOrderingHeuristic(Move move, Board board)
 	{
 		int score = 0;
@@ -169,59 +166,33 @@ public class MyBot : IChessBot
 	/// <param name="beta"></param>
 	/// <param name="isMaximizingPlayer">True if it is white to play</param>
 	/// <returns></returns>
-	float minmax(Board board, int depth, float alpha, float beta, bool isMaximizingPlayer)
+	float negamax(Board board, int depth, float alpha, float beta, int color)
 	{
 		counter++;
 		if (board.IsRepeatedPosition() || board.IsDraw())
 			return 0;
 		if (depth == 0)
 		{
-			return evaluation(board);
+			return color * evaluation(board);
 		}
-		if(isMaximizingPlayer)
+		if (board.IsInCheckmate())
+			return -999999 * color;
+		float max = -100000;
+		foreach (Move move in board.GetLegalMoves())
 		{
-			if (board.IsInCheckmate())
-				return -999999;
-			float max = -100000;
-			foreach (Move move in board.GetLegalMoves())
+			board.MakeMove(move);
+			float eval = -negamax(board, depth - 1, -beta, -alpha, -color);
+			if (eval > max)
 			{
-				board.MakeMove(move);
-				float eval = minmax(board, depth - 1, alpha, beta, !isMaximizingPlayer);
-				if (eval > max)
-				{
-					max = eval;
-				}
-				board.UndoMove(move);
-				alpha = Math.Max(alpha, max);
-				if (beta <= alpha)
-				{
-					return max;
-				}
-
+				max = eval;
 			}
-			return max;
-		}
-		else
-		{
-			if (board.IsInCheckmate())
-				return 999999;
-			float min = 100000;
-			foreach (Move move in board.GetLegalMoves())
+			board.UndoMove(move);
+			alpha = Math.Max(alpha, max);
+			if (beta <= alpha)
 			{
-				board.MakeMove(move);
-				float eval = minmax(board, depth - 1, alpha, beta, !isMaximizingPlayer);
-				if (eval < min)
-				{
-					min = eval;
-				}
-				board.UndoMove(move);
-				beta = Math.Min(beta, min);
-				if (beta <= alpha)
-				{
-					return min;
-				}
+				return max;
 			}
-			return min;
 		}
+		return max;
 	}
 }
