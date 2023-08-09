@@ -17,34 +17,37 @@ using System.Diagnostics.Metrics;
 public class MyBot : IChessBot
 {
 	int counter = 0;
+	int evalCounter = 0;
 	int[,] knightMatrix = {
-		{1, 2, 3, 3, 3, 3, 2, 1},
-		{2, 4, 5, 5, 5, 5, 4, 2},
-		{3, 5, 7, 7, 7, 7, 5, 3},
-		{3, 5, 7, 8, 8, 7, 5 ,3},
-		{3 ,5 ,7 ,8 ,8 ,7 ,5 ,3},
-		{3 ,5 ,7 ,7 ,7 ,7 ,5 ,3},
-		{2 ,4 ,5 ,5 ,5 ,5 ,4 ,2},
-		{1 ,2 ,3 ,3 ,3 ,3 ,2 ,1}};
+		{0, -5, 1, 1, 1, 1, -5, 0},
+		{0, 4, 5, 5, 5, 5, 4, 0},
+		{1, 5, 7, 7, 7, 7, 5, 1},
+		{1, 5, 7, 8, 8, 7, 5 ,1},
+		{1 ,5 ,7 ,8 ,8 ,7 ,5 ,1},
+		{1 ,5 ,7 ,7 ,7 ,7 ,5 ,1},
+		{1 ,4 ,5 ,5 ,5 ,5 ,4 ,1},
+		{0, -5, 3, 3, 3, 3, -5, 0}};
 
 	int[,] bishopMatrix = {
-		{3, 3, 3, 3, 3, 3, 3, 3},
+		{3, 3, -4, 3, 3, -4, 3, 3},
 		{3, 4, 4, 4, 4, 4, 4, 3},
 		{3, 4, 5, 5, 5, 5, 4, 3},
 		{3, 4, 5, 6, 6, 5, 4 ,3},
 		{3 ,4 ,5 ,6 ,6 ,5 ,4 ,3},
 		{3 ,4 ,5 ,5 ,5 ,5 ,4 ,3},
 		{3 ,4 ,4 ,4 ,4 ,4 ,4 ,3},
-		{3 ,3 ,3 ,3 ,3 ,3 ,3 ,3}};
+		{3, 3, -4, 3, 3, -4, 3, 3}};
+	int getKingMatrix(int y, int x)
+	{
+		if (y>1)
+		{
+			return -5;
+		}
+		return kingMatrix[y, x];
+	}
 	int[,] kingMatrix = {
-		{8, 7, 6, 5, 5, 6, 7, 8},
-		{7, 6, 5, 4, 4, 5, 6, 7},
-		{6, 5, 4, 3, 3 ,4 ,5 ,6},
-		{5 ,4 ,3 ,2 ,2 ,3 ,4 ,5},
-		{4 ,3 ,2 ,1 ,1 ,2 ,3 ,4},
-		{3 ,2 ,1 ,0 ,0 ,1 ,2 ,3},
-		{2 ,1 ,0 ,-1 ,-1 ,-0 ,-1 ,-2},
-		{1 ,-0 ,-1 ,-2 ,-2 ,-1 ,-0 ,-1}};
+		{3, 14, 12, 0, 0, 1, 15, 3},
+		{1, 1, 1, 0, 0, 1, 1, 1}};
 
 
 
@@ -55,23 +58,9 @@ public class MyBot : IChessBot
         Move[] moves = board.GetLegalMoves();
         return bestMove(board, 3, board.IsWhiteToMove);
 	}
-	static int Abs(int number)
-	{
-		if (number < 0)
-			number = number * -1;
-
-		return number;
-	}
-	// Test if this move gives checkmate
-	bool MoveIsCheckmate(Board board, Move move)
-	{
-		board.MakeMove(move);
-		bool isMate = board.IsInCheckmate();
-		board.UndoMove(move);
-		return isMate;
-	}
 	float evaluation(Board board)
 	{
+		evalCounter++;
 		float eval = 0;
 		for(int i = 0; i < 64; i++)
 		{
@@ -82,17 +71,19 @@ public class MyBot : IChessBot
 				switch (piece.PieceType)
 				{
 					case PieceType.Pawn:
-						eval += (piece.Square.Rank - 1) * (piece.Square.Rank - 1);
+						eval += (piece.Square.Rank - 1);
 						break;
 					case PieceType.Knight:
-						eval += knightMatrix[piece.Square.File, piece.Square.Rank];
+						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.Bishop:
-						eval += bishopMatrix[piece.Square.File, piece.Square.Rank];
+						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
+						Move[] moves  = board.GetLegalMoves();
+
 						break;
 					case PieceType.King:
 						if(board.GameMoveHistory.Length < 20)
-							eval -= kingMatrix[piece.Square.File, piece.Square.Rank];
+							eval += getKingMatrix(piece.Square.Rank, piece.Square.File);
 						break;
 				}
 				
@@ -103,60 +94,71 @@ public class MyBot : IChessBot
 				switch (piece.PieceType)
 				{
 					case PieceType.Pawn:
-						eval -= (6-piece.Square.Rank ) * (6-piece.Square.Rank);
+						eval -= (6-piece.Square.Rank);
 						break;
 					case PieceType.Knight:
-						eval -= knightMatrix[piece.Square.File, piece.Square.Rank];
+						eval -= knightMatrix[piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.Bishop:
-						eval -= bishopMatrix[piece.Square.File, piece.Square.Rank];
+						eval -= bishopMatrix[piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.King:
-						if (board.GameMoveHistory.Length < 20)
-							eval -= kingMatrix[piece.Square.File, 8 - piece.Square.Rank];
+						if (board.GameMoveHistory.Length < 50)
+							eval -= getKingMatrix(7 - piece.Square.Rank, piece.Square.File);
 						break;
 				}
 			}
 		}
 		return eval;
 	}
+
+
+	Move previousBestMove;
+
 	Move bestMove(Board board, int depth, bool playerToMove)
 	{
 		counter = 0;
+		evalCounter = 0;
 		Move bestmove = board.GetLegalMoves()[0];
 		float curreval = evaluation(board);
 		int sign = playerToMove ? -1 : 1;
 		float bestEval = 1000000 * sign;
-		if (playerToMove) //if white wants the best move
+		// Get and sort the legal moves
+		Move[] legalmoves = board.GetLegalMoves();
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+
+		foreach (Move move in legalmoves)
 		{
-			foreach (Move move in board.GetLegalMoves())
+			board.MakeMove(move);
+			float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
+			if ((playerToMove && eval > bestEval) || (!playerToMove && eval < bestEval))
 			{
-				board.MakeMove(move);
-				float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
-				if (eval > bestEval) //then we should update best move if it is higher
-				{
-					bestEval = eval;
-					bestmove = move;
-				}
-				board.UndoMove(move);
+				bestEval = eval;
+				bestmove = move;
 			}
+			board.UndoMove(move);
 		}
-		else
-		{
-			foreach (Move move in board.GetLegalMoves())
-			{
-				board.MakeMove(move);
-				float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
-				if (eval < bestEval)
-				{
-					bestEval = eval;
-					bestmove = move;
-				}
-				board.UndoMove(move);
-			}
-		}
+
 		Console.WriteLine(counter);
+		Console.WriteLine(evalCounter);
 		return bestmove;
+	}
+	int MoveOrderingHeuristic(Move move, Board board)
+	{
+		int score = 0;
+
+		// Give higher scores to captures and promotions
+		if (move.IsCapture)
+			score += 100;
+		if (move.IsPromotion)
+			score += 50;
+
+		// Give a small bonus for checks
+		board.MakeMove(move);
+		if (board.IsInCheck())
+			score -= 10;
+		board.UndoMove(move);
+		return score;
 	}
 	/// <summary>
 	/// 
