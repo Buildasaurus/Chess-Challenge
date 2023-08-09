@@ -3,9 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
 using System;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq.Expressions;
-using System.Diagnostics.Metrics;
+
 
 /// <summary>
 /// 
@@ -146,17 +144,78 @@ public class MyBot : IChessBot
 
 		// Give higher scores to captures and promotions
 		if (move.IsCapture)
-			score += 100;
+		{
+			// Use MVV-LVA heuristic
+			int victimValue = pieceValues[(int)move.CapturePieceType];
+			int attackerValue = pieceValues[(int)move.MovePieceType];
+			score += 1000 * (victimValue - attackerValue);
+		}
 		if (move.IsPromotion)
-			score += 50;
+			score += 500;
 
 		// Give a small bonus for checks
 		board.MakeMove(move);
 		if (board.IsInCheck())
-			score -= 10;
+			score += 10;
 		board.UndoMove(move);
+
 		return score;
 	}
+	/*
+	int StaticExchangeEvaluation(Move move, Board board)
+	{
+		int score = 0;
+		int attackerValue = pieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
+		int victimValue = pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType];
+
+		// Make the move on the board
+		board.MakeMove(move);
+
+		// Calculate the gain from capturing the victim
+		int gain = victimValue - attackerValue;
+
+		// Find the least valuable attacker of the opposite color
+		Move bestCapture = FindLeastValuableAttacker(move.TargetSquare, board);
+
+		// If there is a capture, recursively evaluate it
+		if (bestCapture != Move.NullMove)
+			gain -= StaticExchangeEvaluation(bestCapture, board);
+
+		// Undo the move on the board
+		board.UndoMove(move);
+
+		// The score is the maximum of 0 and the gain
+		score = Math.Max(0, gain);
+
+		return score;
+	}
+
+	Move FindLeastValuableAttacker(Square square, Board board)
+	{
+		Move bestCapture = Move.NullMove;
+		int bestValue = 9999999;
+
+		// Iterate over all pieces of the opposite color
+		foreach (Move move in board.GetLegalMoves(true))
+		{
+			// Check if the piece can capture the square
+			if (move.TargetSquare == square)
+			{
+				// Check if the piece is less valuable than the current best
+				int value = pieceValues[(int)board.GetPiece(square).PieceType];
+				if (value < bestValue)
+				{
+					// Update the best capture and value
+					bestCapture = move;
+					bestValue = value;
+				}
+			}
+		}
+		return bestCapture;
+	}*/
+
+
+
 	/// <summary>
 	/// 
 	/// </summary>
