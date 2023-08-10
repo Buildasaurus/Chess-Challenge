@@ -46,10 +46,8 @@ public class MyBot : IChessBot
 		return kingMatrix[y, x];
 	}
 	int depth = 3;
-
 	public Move Think(Board board, Timer timer)
 	{
-		Move[] moves = board.GetLegalMoves();
 		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
 		if(counters.Count > 3)
 		{
@@ -183,10 +181,11 @@ public class MyBot : IChessBot
 	{
 		counters.Add(0);
 		evalCounter = 0;
-		Move bestmove = board.GetLegalMoves()[0];
+		Move[] legalmoves = board.GetLegalMoves();
+
+		Move bestmove = legalmoves[0];
 		int color = playerToMove ? 1 : -1;
 		float bestEval = -1000000;
-		Move[] legalmoves = board.GetLegalMoves();
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 
 		foreach (Move move in legalmoves)
