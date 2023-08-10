@@ -214,16 +214,22 @@ public class MyBot : IChessBot
 		if (move.IsCapture)
 		{
 			// Use MVV-LVA heuristic
-			score += 1000 * (pieceValues[(int)move.CapturePieceType-1] - pieceValues[(int)move.MovePieceType-1]);
+			score += 10*pieceValues[(int)move.CapturePieceType-1] - pieceValues[(int)move.MovePieceType-1];
+			if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
+				score = 100000;
 		}
 		if (move.IsPromotion)
-			score += 500;
-
+			score += 900;
+		//give small bonus for perhaps retaking or taking the last piece moved.
+		if (board.GameMoveHistory.Length > 0 && board.GameMoveHistory[^1].TargetSquare == move.TargetSquare)
+			score += 50;
 		// Give a small bonus for checks
 		board.MakeMove(move);
 		if (board.IsInCheck())
-			score += 10;
+			score += 100;
 		board.UndoMove(move);
+		if (board.SquareIsAttackedByOpponent(move.TargetSquare))
+			score -= pieceValues[(int)move.MovePieceType - 1];
 
 		return score;
 	}
