@@ -62,14 +62,13 @@ public class MyBot : IChessBot
 		return bestMove(board, depth, board.IsWhiteToMove);
 	}
 
-	int[] pieceValues = { 0, 100, 300, 300, 500, 900, 99999 };
+	int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
 
 
 	float evaluation(Board board)
 	{
 		evalCounter++;
 		float eval = 0;
-
 		// Initialize variables for pawn structure and king safety evaluation
 		ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
 		ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
@@ -79,30 +78,8 @@ public class MyBot : IChessBot
 		ulong blackPieces = board.BlackPiecesBitboard;
 		Square whiteKingSquare = board.GetKingSquare(true);
 		Square blackKingSquare = board.GetKingSquare(false);
-
-		for (int i = 0; i < 64; i++)
-		{
-			Piece piece = board.GetPiece(new Square(i));
-			int sign = piece.IsWhite ? 1 : -1;
-			eval += sign * pieceValues[(int)piece.PieceType];
-			switch (piece.PieceType)
-			{
-				case PieceType.Pawn:
-					eval += sign * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
-					break;
-				case PieceType.Knight:
-					eval += sign * knightMatrix[piece.Square.Rank, piece.Square.File];
-					break;
-				case PieceType.Bishop:
-					eval += sign * bishopMatrix[piece.Square.Rank, piece.Square.File];
-					break;
-				case PieceType.King:
-					if (board.GameMoveHistory.Length < (piece.IsWhite ? 20 : 50))
-						eval += sign * getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
-					break;
-			}
-		}
-
+		eval += materialEval(board, true);
+		eval -= materialEval(board, false);
 		// Evaluate doubled pawns
 		for (int file = 0; file < 8; file++)
 		{
@@ -168,8 +145,38 @@ public class MyBot : IChessBot
 		return mask;
 	}
 
-
-
+	int materialEval(Board board, bool color)
+	{
+		int eval = 0;
+		PieceType[] piectypes = { PieceType.Pawn, PieceType.Knight, PieceType.Bishop, PieceType.Rook, 
+			PieceType.Queen, PieceType.King};
+		for (int i = 0; i < piectypes.Length; i++)
+		{
+			PieceList pieces = board.GetPieceList(piectypes[i], color);
+			eval += pieceValues[i] * pieces.Count;
+			foreach (Piece piece in pieces)
+			{
+				switch (piece.PieceType)
+				{
+					case PieceType.Pawn:
+						eval += (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+						break;
+					case PieceType.Knight:
+						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.Bishop:
+						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.King:
+						if (board.GameMoveHistory.Length < 50)
+							eval += getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
+						break;
+				}
+			}
+		}
+		
+		return eval;
+	}
 
 
 	Move bestMove(Board board, int depth, bool playerToMove)
@@ -207,7 +214,7 @@ public class MyBot : IChessBot
 		if (move.IsCapture)
 		{
 			// Use MVV-LVA heuristic
-			score += 1000 * (pieceValues[(int)move.CapturePieceType] - pieceValues[(int)move.MovePieceType]);
+			score += 1000 * (pieceValues[(int)move.CapturePieceType-1] - pieceValues[(int)move.MovePieceType-1]);
 		}
 		if (move.IsPromotion)
 			score += 500;
