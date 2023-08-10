@@ -1,7 +1,10 @@
 ﻿using ChessChallenge.API;
+using System.Linq;
+using System.Numerics;
+using System.Collections.Generic;
 using System;
-using System.Diagnostics.Metrics;
-using System.Reflection;
+
+
 
 namespace ChessChallenge.Example
 {
@@ -9,145 +12,193 @@ namespace ChessChallenge.Example
 	// Plays randomly otherwise.
 	public class EvilBot : IChessBot
 	{
-		int counter = 0;
+		List<int> counters = new List<int>();
 		int evalCounter = 0;
 		int[,] knightMatrix = {
-			{1, 2, 3, 3, 3, 3, 2, 1},
-			{2, 4, 5, 5, 5, 5, 4, 2},
-			{3, 5, 7, 7, 7, 7, 5, 3},
-			{3, 5, 7, 8, 8, 7, 5 ,3},
-			{3 ,5 ,7 ,8 ,8 ,7 ,5 ,3},
-			{3 ,5 ,7 ,7 ,7 ,7 ,5 ,3},
-			{2 ,4 ,5 ,5 ,5 ,5 ,4 ,2},
-			{1 ,2 ,3 ,3 ,3 ,3 ,2 ,1}};
+			{0, -5, 1, 1, 1, 1, -5, 0},
+			{0, 4, 5, 5, 5, 5, 4, 0},
+			{1, 5, 7, 7, 7, 7, 5, 1},
+			{1, 5, 7, 8, 8, 7, 5 ,1},
+			{1 ,5 ,7 ,8 ,8 ,7 ,5 ,1},
+			{1 ,5 ,7 ,7 ,7 ,7 ,5 ,1},
+			{1 ,4 ,5 ,5 ,5 ,5 ,4 ,1},
+			{0, -5, 3, 3, 3, 3, -5, 0}};
 
 		int[,] bishopMatrix = {
-			{3, 3, 3, 3, 3, 3, 3, 3},
+			{3, 3, -4, 3, 3, -4, 3, 3},
 			{3, 4, 4, 4, 4, 4, 4, 3},
 			{3, 4, 5, 5, 5, 5, 4, 3},
 			{3, 4, 5, 6, 6, 5, 4 ,3},
 			{3 ,4 ,5 ,6 ,6 ,5 ,4 ,3},
 			{3 ,4 ,5 ,5 ,5 ,5 ,4 ,3},
 			{3 ,4 ,4 ,4 ,4 ,4 ,4 ,3},
-			{3 ,3 ,3 ,3 ,3 ,3 ,3 ,3}};
+			{3, 3, -4, 3, 3, -4, 3, 3}};
 		int[,] kingMatrix = {
-			{8, 7, 6, 5, 5, 6, 7, 8},
-			{7, 6, 5, 4, 4, 5, 6, 7},
-			{6, 5, 4, 3, 3 ,4 ,5 ,6},
-			{5 ,4 ,3 ,2 ,2 ,3 ,4 ,5},
-			{4 ,3 ,2 ,1 ,1 ,2 ,3 ,4},
-			{3 ,2 ,1 ,0 ,0 ,1 ,2 ,3},
-			{2 ,1 ,0 ,-1 ,-1 ,-0 ,-1 ,-2},
-			{1 ,-0 ,-1 ,-2 ,-2 ,-1 ,-0 ,-1}};
-
-
-
-		int[] pieceValues = { 0, 100, 300, 300, 500, 900, 99999 };
+			{3, 14, 12, 0, 0, 1, 15, 3},
+			{1, 1, 1, 0, 0, 1, 1, 1}};
+		int getKingMatrix(int y, int x)
+		{
+			if (y > 1)
+				return -5;
+			return kingMatrix[y, x];
+		}
+		int depth = 3;
 
 		public Move Think(Board board, Timer timer)
 		{
 			Move[] moves = board.GetLegalMoves();
-			return bestMove(board, 3, board.IsWhiteToMove);
+			/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
+			if(counters.Count > 3)
+			{
+				int sum = (counters[^1] + counters[^2] + counters[^3]) / 3;
+				if (sum < 8000)
+					depth += 2;
+				if (sum > 500000 && depth > 3)
+					depth -= 2;
+			}*/
+			return bestMove(board, depth, board.IsWhiteToMove);
 		}
+
+		int[] pieceValues = { 0, 100, 300, 300, 500, 900, 99999 };
+
+
 		float evaluation(Board board)
 		{
 			evalCounter++;
 			float eval = 0;
+
 			for (int i = 0; i < 64; i++)
 			{
 				Piece piece = board.GetPiece(new Square(i));
-				if (piece.IsWhite)
+				int sign = piece.IsWhite ? 1 : -1;
+				eval += sign * pieceValues[(int)piece.PieceType];
+				switch (piece.PieceType)
 				{
-					eval += pieceValues[(int)piece.PieceType];
-					switch (piece.PieceType)
-					{
-						case PieceType.Pawn:
-							eval += (piece.Square.Rank - 1) * (piece.Square.Rank - 1);
-							break;
-						case PieceType.Knight:
-							eval += knightMatrix[piece.Square.File, piece.Square.Rank];
-							break;
-						case PieceType.Bishop:
-							eval += bishopMatrix[piece.Square.File, piece.Square.Rank];
-							Move[] moves = board.GetLegalMoves();
-
-							break;
-						case PieceType.King:
-							if (board.GameMoveHistory.Length < 20)
-								eval -= kingMatrix[piece.Square.File, piece.Square.Rank];
-							break;
-					}
-
-				}
-				else
-				{
-					eval -= pieceValues[(int)piece.PieceType];
-					switch (piece.PieceType)
-					{
-						case PieceType.Pawn:
-							eval -= (6 - piece.Square.Rank) * (6 - piece.Square.Rank);
-							break;
-						case PieceType.Knight:
-							eval -= knightMatrix[piece.Square.File, piece.Square.Rank];
-							break;
-						case PieceType.Bishop:
-							eval -= bishopMatrix[piece.Square.File, piece.Square.Rank];
-							break;
-						case PieceType.King:
-							if (board.GameMoveHistory.Length < 20)
-								eval -= kingMatrix[piece.Square.File, 8 - piece.Square.Rank];
-							break;
-					}
+					case PieceType.Pawn:
+						eval += sign * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+						break;
+					case PieceType.Knight:
+						eval += sign * knightMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.Bishop:
+						eval += sign * bishopMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.King:
+						if (board.GameMoveHistory.Length < (piece.IsWhite ? 20 : 50))
+							eval += sign * getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
+						break;
 				}
 			}
+
+			
+
 			return eval;
 		}
-
-
-
-
+		
 		Move bestMove(Board board, int depth, bool playerToMove)
 		{
-			counter = 0;
+			counters.Add(0);
 			evalCounter = 0;
 			Move bestmove = board.GetLegalMoves()[0];
-			float curreval = evaluation(board);
-			int sign = playerToMove ? -1 : 1;
-			float bestEval = 1000000 * sign;
-			if (playerToMove) //if white wants the best move
+			int color = playerToMove ? 1 : -1;
+			float bestEval = -1000000;
+			Move[] legalmoves = board.GetLegalMoves();
+			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+
+			foreach (Move move in legalmoves)
 			{
-				foreach (Move move in board.GetLegalMoves())
+				board.MakeMove(move);
+				float eval = -negamax(board, depth, -1000000, 1000000, -color);
+				if (eval > bestEval)
 				{
-					board.MakeMove(move);
-					float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
-					if (eval > bestEval) //then we should update best move if it is higher
-					{
-						bestEval = eval;
-						bestmove = move;
-					}
-					board.UndoMove(move);
+					bestEval = eval;
+					bestmove = move;
 				}
+				board.UndoMove(move);
 			}
-			else
-			{
-				foreach (Move move in board.GetLegalMoves())
-				{
-					board.MakeMove(move);
-					float eval = minmax(board, depth, -1000000, 1000000, !playerToMove); //is opposite turn after having done a move
-					if (eval < bestEval)
-					{
-						bestEval = eval;
-						bestmove = move;
-					}
-					board.UndoMove(move);
-				}
-			}
-			Console.WriteLine("old");
-			Console.WriteLine(counter);
+
+			Console.WriteLine(counters[^1]);
 			Console.WriteLine(evalCounter);
-			Console.WriteLine("new");
 			return bestmove;
 		}
+
+		int MoveOrderingHeuristic(Move move, Board board)
+		{
+			int score = 0;
+
+			// Give higher scores to captures and promotions
+			if (move.IsCapture)
+			{
+				// Use MVV-LVA heuristic
+				score += 1000 * (pieceValues[(int)move.CapturePieceType] - pieceValues[(int)move.MovePieceType]);
+			}
+			if (move.IsPromotion)
+				score += 500;
+
+			// Give a small bonus for checks
+			board.MakeMove(move);
+			if (board.IsInCheck())
+				score += 10;
+			board.UndoMove(move);
+
+			return score;
+		}
+
+		/*
+		int StaticExchangeEvaluation(Move move, Board board)
+		{
+			int score = 0;
+			int attackerValue = pieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
+			int victimValue = pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType];
+
+			// Make the move on the board
+			board.MakeMove(move);
+
+			// Calculate the gain from capturing the victim
+			int gain = victimValue - attackerValue;
+
+			// Find the least valuable attacker of the opposite color
+			Move bestCapture = FindLeastValuableAttacker(move.TargetSquare, board);
+
+			// If there is a capture, recursively evaluate it
+			if (bestCapture != Move.NullMove)
+				gain -= StaticExchangeEvaluation(bestCapture, board);
+
+			// Undo the move on the board
+			board.UndoMove(move);
+
+			// The score is the maximum of 0 and the gain
+			score = Math.Max(0, gain);
+
+			return score;
+		}
+
+		Move FindLeastValuableAttacker(Square square, Board board)
+		{
+			Move bestCapture = Move.NullMove;
+			int bestValue = 9999999;
+
+			// Iterate over all pieces of the opposite color
+			foreach (Move move in board.GetLegalMoves(true))
+			{
+				// Check if the piece can capture the square
+				if (move.TargetSquare == square)
+				{
+					// Check if the piece is less valuable than the current best
+					int value = pieceValues[(int)board.GetPiece(square).PieceType];
+					if (value < bestValue)
+					{
+						// Update the best capture and value
+						bestCapture = move;
+						bestValue = value;
+					}
+				}
+			}
+			return bestCapture;
+		}*/
+
+
+
 		/// <summary>
 		/// 
 		/// </summary>
@@ -157,60 +208,35 @@ namespace ChessChallenge.Example
 		/// <param name="beta"></param>
 		/// <param name="isMaximizingPlayer">True if it is white to play</param>
 		/// <returns></returns>
-		float minmax(Board board, int depth, float alpha, float beta, bool isMaximizingPlayer)
+		float negamax(Board board, int depth, float alpha, float beta, int color)
 		{
-			counter++;
+			if (board.IsInCheckmate())
+				return -999999;
+			counters[^1]++;
 			if (board.IsRepeatedPosition() || board.IsDraw())
 				return 0;
 			if (depth == 0)
 			{
-				return evaluation(board);
+				return color * evaluation(board);
 			}
-			if (isMaximizingPlayer)
-			{
-				if (board.IsInCheckmate())
-					return -999999;
-				float max = -100000;
-				foreach (Move move in board.GetLegalMoves())
-				{
-					board.MakeMove(move);
-					float eval = minmax(board, depth - 1, alpha, beta, !isMaximizingPlayer);
-					if (eval > max)
-					{
-						max = eval;
-					}
-					board.UndoMove(move);
-					alpha = Math.Max(alpha, max);
-					if (beta <= alpha)
-					{
-						return max;
-					}
 
-				}
-				return max;
-			}
-			else
+			float max = -100000;
+			foreach (Move move in board.GetLegalMoves())
 			{
-				if (board.IsInCheckmate())
-					return 999999;
-				float min = 100000;
-				foreach (Move move in board.GetLegalMoves())
+				board.MakeMove(move);
+				float eval = -negamax(board, depth - 1, -beta, -alpha, -color);
+				if (eval > max)
 				{
-					board.MakeMove(move);
-					float eval = minmax(board, depth - 1, alpha, beta, !isMaximizingPlayer);
-					if (eval < min)
-					{
-						min = eval;
-					}
-					board.UndoMove(move);
-					beta = Math.Min(beta, min);
-					if (beta <= alpha)
-					{
-						return min;
-					}
+					max = eval;
 				}
-				return min;
+				board.UndoMove(move);
+				alpha = Math.Max(alpha, max);
+				if (beta <= alpha)
+				{
+					return max;
+				}
 			}
+			return max;
 		}
 	}
 }
