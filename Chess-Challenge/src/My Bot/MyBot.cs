@@ -68,55 +68,107 @@ public class MyBot : IChessBot
 	{
 		evalCounter++;
 		float eval = 0;
-		for(int i = 0; i < 64; i++)
+
+		// Initialize variables for pawn structure and king safety evaluation
+		ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
+		ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
+		ulong whiteIsolatedPawns = ~((whitePawns << 1) | (whitePawns >> 1));
+		ulong blackIsolatedPawns = ~((blackPawns << 1) | (blackPawns >> 1));
+		ulong whitePieces = board.WhitePiecesBitboard;
+		ulong blackPieces = board.BlackPiecesBitboard;
+		Square whiteKingSquare = board.GetKingSquare(true);
+		Square blackKingSquare = board.GetKingSquare(false);
+
+		for (int i = 0; i < 64; i++)
 		{
 			Piece piece = board.GetPiece(new Square(i));
-			if(piece.IsWhite)
+			int sign = piece.IsWhite ? 1 : -1;
+			eval += sign * pieceValues[(int)piece.PieceType];
+			switch (piece.PieceType)
 			{
-				eval += pieceValues[(int)piece.PieceType];
-				switch (piece.PieceType)
-				{
-					case PieceType.Pawn:
-						eval += (piece.Square.Rank - 1);
-						break;
-					case PieceType.Knight:
-						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
-						break;
-					case PieceType.Bishop:
-						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
-						Move[] moves  = board.GetLegalMoves();
-
-						break;
-					case PieceType.King:
-						if(board.GameMoveHistory.Length < 20)
-							eval += getKingMatrix(piece.Square.Rank, piece.Square.File);
-						break;
-				}
-				
-			}
-			else
-			{
-				eval -= pieceValues[(int)piece.PieceType];
-				switch (piece.PieceType)
-				{
-					case PieceType.Pawn:
-						eval -= (6-piece.Square.Rank);
-						break;
-					case PieceType.Knight:
-						eval -= knightMatrix[piece.Square.Rank, piece.Square.File];
-						break;
-					case PieceType.Bishop:
-						eval -= bishopMatrix[piece.Square.Rank, piece.Square.File];
-						break;
-					case PieceType.King:
-						if (board.GameMoveHistory.Length < 50)
-							eval -= getKingMatrix(7 - piece.Square.Rank, piece.Square.File);
-						break;
-				}
+				case PieceType.Pawn:
+					eval += sign * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+					break;
+				case PieceType.Knight:
+					eval += sign * knightMatrix[piece.Square.Rank, piece.Square.File];
+					break;
+				case PieceType.Bishop:
+					eval += sign * bishopMatrix[piece.Square.Rank, piece.Square.File];
+					break;
+				case PieceType.King:
+					if (board.GameMoveHistory.Length < (piece.IsWhite ? 20 : 50))
+						eval += sign * getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
+					break;
 			}
 		}
+
+		// Evaluate doubled pawns
+		for (int file = 0; file < 8; file++)
+		{
+			int whitePawnsOnFile = BitOperations.PopCount(whitePawns & FileMask(file));
+			int blackPawnsOnFile = BitOperations.PopCount(blackPawns & FileMask(file));
+			if (whitePawnsOnFile > 1)
+				eval -= whitePawnsOnFile - 1;
+			if (blackPawnsOnFile > 1)
+				eval += blackPawnsOnFile - 1;
+		}
+
+		// Evaluate isolated pawns
+		eval -= BitOperations.PopCount(whiteIsolatedPawns & whitePawns);
+		eval += BitOperations.PopCount(blackIsolatedPawns & blackPawns);
+
+		// Evaluate king safety
+		int whiteKingFile = whiteKingSquare.File;
+		int whiteKingRank = whiteKingSquare.Rank;
+
+		// Check for open files towards the king
+		ulong fileMask = FileMask(whiteKingFile);
+		if ((fileMask & ~(RankMask(whiteKingRank) - 1) & ~(whitePieces | blackPieces)) == (fileMask & ~(RankMask(whiteKingRank) - 1)))
+			eval -= 0.5f;
+
+		// Check for open diagonals towards the king
+		ulong diagonalMask = DiagonalMask(whiteKingSquare);
+		if ((diagonalMask & ~(RankMask(whiteKingRank) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & ~(RankMask(whiteKingRank) - 1)))
+			eval -= 0.5f;
+
+		// Evaluate king safety for black
+		int blackKingFile = blackKingSquare.File;
+		int blackKingRank = blackKingSquare.Rank;
+
+		// Check for open files towards the king
+		fileMask = FileMask(blackKingFile);
+		if ((fileMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (fileMask & (RankMask(blackKingRank + 1) - 1)))
+			eval += 0.5f;
+
+		// Check for open diagonals towards the king
+		diagonalMask = DiagonalMask(blackKingSquare);
+		if ((diagonalMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & (RankMask(blackKingRank + 1) - 1)))
+			eval += 0.5f;
+
 		return eval;
 	}
+	ulong FileMask(int file)
+	{
+		return 0x0101010101010101UL << file;
+	}
+	ulong RankMask(int rank)
+	{
+		return 0xffUL << (rank * 8);
+	}
+	ulong DiagonalMask(Square square)
+	{
+		int rank = square.Rank;
+		int file = square.File;
+		ulong mask = 0;
+		for (int i = 1; i < Math.Min(rank, file) + 1; i++)
+			mask |= 1UL << ((rank - i) * 8 + file - i);
+		for (int i = 1; i < Math.Min(7 - rank, file) + 1; i++)
+			mask |= 1UL << ((rank + i) * 8 + file - i);
+		return mask;
+	}
+
+
+
 
 
 	Move bestMove(Board board, int depth, bool playerToMove)
@@ -234,6 +286,8 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	float negamax(Board board, int depth, float alpha, float beta, int color)
 	{
+		if (board.IsInCheckmate())
+			return -999999;
 		counters[^1]++;
 		if (board.IsRepeatedPosition() || board.IsDraw())
 			return 0;
@@ -241,8 +295,7 @@ public class MyBot : IChessBot
 		{
 			return color * evaluation(board);
 		}
-		if (board.IsInCheckmate())
-			return -999999 * color;
+
 		float max = -100000;
 		foreach (Move move in board.GetLegalMoves())
 		{
