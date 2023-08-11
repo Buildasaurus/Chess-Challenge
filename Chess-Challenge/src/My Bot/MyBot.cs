@@ -84,7 +84,6 @@ public class MyBot : IChessBot
             bestEval = -1000000; //must reset besteval, or it will not reach as good evals
                                  //as last round, and not realize there are better moves
 
-            Console.WriteLine($"bestmove was {bestmove}, now going at depth {d}");
 
             int index = Array.IndexOf(legalmoves, bestmove);
             if (index > 0)
@@ -103,7 +102,7 @@ public class MyBot : IChessBot
                     break;
                 }
                 board.MakeMove(move);
-                float eval = -negamax(board, d, -1000000, 1000000, -color);
+                float eval = -negamax(board, d, -1000000, 1000000, -color, 0);
                 if (eval > bestEval)
                 {
                     bestEval = eval;
@@ -113,13 +112,16 @@ public class MyBot : IChessBot
                 //Console.WriteLine($"Move {move} was {eval}");
 
             }
-            Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
-            if (timeToStop && d >= 3)
+			Console.WriteLine($"bestmove at depth {d} was {bestmove} with eval at {bestEval}");
+
+			if (timeToStop && d >= 3)
             {
                 break;
             }
         }
-        Console.WriteLine("mybot " + counters.Count);
+		Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
+
+		Console.WriteLine("mybot " + counters.Count);
         Console.WriteLine("mybit " + evalCounter);
         return bestmove;
     }
@@ -252,7 +254,7 @@ public class MyBot : IChessBot
                 switch (piece.PieceType)
                 {
                     case PieceType.Pawn:
-                        eval += (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+                        eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
                         break;
                     case PieceType.Knight:
                         eval += knightMatrix[piece.Square.Rank, piece.Square.File];
@@ -338,12 +340,13 @@ public class MyBot : IChessBot
     /// <param name="beta"></param>
     /// <param name="isMaximizingPlayer">True if it is white to play</param>
     /// <returns></returns>
-    float negamax(Board board, int depth, float alpha, float beta, int color)
+    float negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions)
     {
         if (board.IsInCheckmate())
             return -999999;
+            
         counters[^1]++;
-        if (board.IsRepeatedPosition() || board.IsDraw())
+        if (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate())
             return 0;
         if (depth == 0)
         {
@@ -354,7 +357,11 @@ public class MyBot : IChessBot
         foreach (Move move in board.GetLegalMoves())
         {
             board.MakeMove(move);
-            float eval = -negamax(board, depth - 1, -beta, -alpha, -color);
+			int extension = board.IsInCheck() && numExtensions < 16 ? 1 : 0;
+            if (numExtensions > 8) Console.WriteLine($"{numExtensions}");
+			//int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 10 ? 1 : 0;
+
+			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + 1);
             if (eval > max)
             {
                 max = eval;
