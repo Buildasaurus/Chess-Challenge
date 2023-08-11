@@ -46,8 +46,13 @@ public class MyBot : IChessBot
 			return -5;
 		return kingMatrix[y, x];
 	}
-	int depth = 3;
-	public Move Think(Board board, Timer timer)
+	bool timeToStop = false;
+	Timer timer;
+	/// <summary>
+	/// if under this miliseconds remaing, then should stop.
+	/// </summary>
+	int endMiliseconds = 0;
+	public Move Think(Board board, Timer _timer)
 	{
 		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
 		if(counters.Count > 3)
@@ -58,11 +63,88 @@ public class MyBot : IChessBot
 			if (sum > 500000 && depth > 3)
 				depth -= 2;
 		}*/
-		return bestMove(board, depth, board.IsWhiteToMove);
+		timer = _timer;
+		endMiliseconds = timer.MillisecondsRemaining - 1000;
+		timeToStop = false;
+		return bestMove(board, board.IsWhiteToMove);
+	}
+	
+	int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
+	Move bestMove(Board board, bool playerToMove)
+	{
+		counters.Add(0);
+		evalCounter = 0;
+		Move[] legalmoves = board.GetLegalMoves();
+
+		Move bestmove = legalmoves[0];
+		int color = playerToMove ? 1 : -1;
+		float bestEval = -1000000;
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+
+		for (int d = 1; d <= 99; d++)
+		{
+
+			int index = Array.IndexOf(legalmoves, bestmove);
+			if (index > 0)
+			{
+				for (int i = index; i > 0; i--)
+				{
+					legalmoves[i] = legalmoves[i - 1];
+				}
+				legalmoves[0] = bestmove;
+			}
+
+			foreach (Move move in legalmoves)
+			{
+				if (timeToStop)
+				{
+					break;
+				}
+				board.MakeMove(move);
+				float eval = -negamax(board, d, -1000000, 1000000, -color);
+				if (eval > bestEval)
+				{
+					bestEval = eval;
+					bestmove = move;
+				}
+				board.UndoMove(move);
+			}
+		}
+
+		Console.WriteLine(counters);
+		Console.WriteLine(evalCounter);
+		return bestmove;
 	}
 
-	int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
 
+
+	int MoveOrderingHeuristic(Move move, Board board)
+	{
+		int score = 0;
+
+		// Give higher scores to captures and promotions
+		if (move.IsCapture)
+		{
+			// Use MVV-LVA heuristic
+			score += 10 * pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
+			if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
+				score = 100000;
+		}
+		if (move.IsPromotion)
+			score += 900;
+		//give small bonus for perhaps retaking or taking the last piece moved.
+		if (board.GameMoveHistory.Length > 0 && board.GameMoveHistory[^1].TargetSquare == move.TargetSquare)
+			score += 50;
+		// Give a small bonus for checks
+		board.MakeMove(move);
+		if (board.IsInCheck())
+			score += 100;
+		board.UndoMove(move);
+		if (board.SquareIsAttackedByOpponent(move.TargetSquare))
+			score -= pieceValues[(int)move.MovePieceType - 1];
+
+		return score;
+	}
 
 	float evaluation(Board board)
 	{
@@ -149,6 +231,7 @@ public class MyBot : IChessBot
 
 	int materialEval(Board board, bool color)
 	{
+		if(!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
 		int eval = 0;
 		PieceType[] piectypes = { PieceType.Pawn, PieceType.Knight, PieceType.Bishop, PieceType.Rook, 
 			PieceType.Queen, PieceType.King};
@@ -181,61 +264,7 @@ public class MyBot : IChessBot
 	}
 
 
-	Move bestMove(Board board, int depth, bool playerToMove)
-	{
-		counters.Add(0);
-		evalCounter = 0;
-		Move[] legalmoves = board.GetLegalMoves();
-
-		Move bestmove = legalmoves[0];
-		int color = playerToMove ? 1 : -1;
-		float bestEval = -1000000;
-		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
-
-		foreach (Move move in legalmoves)
-		{
-			board.MakeMove(move);
-			float eval = -negamax(board, depth, -1000000, 1000000, -color);
-			if (eval > bestEval)
-			{
-				bestEval = eval;
-				bestmove = move;
-			}
-			board.UndoMove(move);
-		}
-
-		Console.WriteLine(counters[^1]);
-		Console.WriteLine(evalCounter);
-		return bestmove;
-	}
-
-	int MoveOrderingHeuristic(Move move, Board board)
-	{
-		int score = 0;
-
-		// Give higher scores to captures and promotions
-		if (move.IsCapture)
-		{
-			// Use MVV-LVA heuristic
-			score += 10*pieceValues[(int)move.CapturePieceType-1] - pieceValues[(int)move.MovePieceType-1];
-			if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
-				score = 100000;
-		}
-		if (move.IsPromotion)
-			score += 900;
-		//give small bonus for perhaps retaking or taking the last piece moved.
-		if (board.GameMoveHistory.Length > 0 && board.GameMoveHistory[^1].TargetSquare == move.TargetSquare)
-			score += 50;
-		// Give a small bonus for checks
-		board.MakeMove(move);
-		if (board.IsInCheck())
-			score += 100;
-		board.UndoMove(move);
-		if (board.SquareIsAttackedByOpponent(move.TargetSquare))
-			score -= pieceValues[(int)move.MovePieceType - 1];
-
-		return score;
-	}
+	
 
 	/*
 	int StaticExchangeEvaluation(Move move, Board board)
