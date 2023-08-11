@@ -18,27 +18,28 @@ public class MyBot : IChessBot
 	List<int> counters = new List<int>();
 	int evalCounter = 0;
 	int[,] knightMatrix = {
-			{0, -5, 1, 1, 1, 1, -5, 0},
-			{0, 4, 5, 5, 5, 5, 4, 0},
-			{1, 5, 7, 7, 7, 7, 5, 1},
-			{1, 5, 7, 8, 8, 7, 5 ,1},
-			{1 ,5 ,7 ,8 ,8 ,7 ,5 ,1},
-			{1 ,5 ,7 ,7 ,7 ,7 ,5 ,1},
-			{1 ,4 ,5 ,5 ,5 ,5 ,4 ,1},
-			{0, -5, 3, 3, 3, 3, -5, 0}};
+			{-50, -40, -30, -30, -30, -30, -40, -50},
+			{-40, -20, 0, 0, 0, 0, -20, -40},
+			{-30, 0, 10, 15, 15, 10, 0, -30},
+			{-30, 5, 15, 20, 20, 15, 5,-30},
+			{-30, 0, 15, 20, 20, 15, 0,-30},
+			{-30, 5, 10, 15, 15, 10, 5, -30},
+			{-40, -20, 0, 5, 5, 0, -20, -40},
+			{-50, -40, -30, -30, -30, -30, -40, -50}};
 
-	int[,] bishopMatrix = {
-			{3, 3, -4, 3, 3, -4, 3, 3},
-			{3, 4, 4, 4, 4, 4, 4, 3},
-			{3, 4, 5, 5, 5, 5, 4, 3},
-			{3, 4, 5, 6, 6, 5, 4 ,3},
-			{3 ,4 ,5 ,6 ,6 ,5 ,4 ,3},
-			{3 ,4 ,5 ,5 ,5 ,5 ,4 ,3},
-			{3 ,4 ,4 ,4 ,4 ,4 ,4 ,3},
-			{3, 3, -4, 3, 3, -4, 3, 3}};
+	int[,] bishopMatrix =  {
+			{-20,-10,-10,-10,-10,-10,-10,-20},
+			{-10,  0,  0,  0,  0,  0,  0,-10},
+			{-10,  0,  5, 10, 10,  5,  0,-10},
+			{-10,  5,  5, 10, 10,  5,  5,-10},
+			{-10,  0, 10, 10, 10, 10,  0,-10},
+			{-10, 10, 10, 10, 10, 10, 10,-10},
+			{-10,  5,  0,  0,  0,  0,  5,-10},
+			{-20,-10,-10,-10,-10,-10,-10,-20},
+		};
 	int[,] kingMatrix = {
-			{3, 14, 12, 0, 0, 1, 15, 3},
-			{1, 1, 1, 0, 0, 1, 1, 1}};
+			{20, 30, 10, 0, 0, 10, 30, 20},
+			{20, 20, -5, -5, -5, -5, 20, 20}};
 	int getKingMatrix(int y, int x)
 	{
 		if (y > 1)
@@ -67,8 +68,11 @@ public class MyBot : IChessBot
 	{
 		evalCounter++;
 		float eval = 0;
+		eval += materialEval(board, true);
+		eval -= materialEval(board, false);
+
 		// Initialize variables for pawn structure and king safety evaluation
-		ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
+		/*ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
 		ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
 		ulong whiteIsolatedPawns = ~((whitePawns << 1) | (whitePawns >> 1));
 		ulong blackIsolatedPawns = ~((blackPawns << 1) | (blackPawns >> 1));
@@ -76,8 +80,7 @@ public class MyBot : IChessBot
 		ulong blackPieces = board.BlackPiecesBitboard;
 		Square whiteKingSquare = board.GetKingSquare(true);
 		Square blackKingSquare = board.GetKingSquare(false);
-		eval += materialEval(board, true);
-		eval -= materialEval(board, false);
+
 		// Evaluate doubled pawns
 		for (int file = 0; file < 8; file++)
 		{
@@ -120,9 +123,10 @@ public class MyBot : IChessBot
 		diagonalMask = DiagonalMask(blackKingSquare);
 		if ((diagonalMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & (RankMask(blackKingRank + 1) - 1)))
 			eval += 0.5f;
-
+		*/
 		return eval;
 	}
+	/*
 	ulong FileMask(int file)
 	{
 		return 0x0101010101010101UL << file;
@@ -141,7 +145,7 @@ public class MyBot : IChessBot
 		for (int i = 1; i < Math.Min(7 - rank, file) + 1; i++)
 			mask |= 1UL << ((rank + i) * 8 + file - i);
 		return mask;
-	}
+	}*/
 
 	int materialEval(Board board, bool color)
 	{
