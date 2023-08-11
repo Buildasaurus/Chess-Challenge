@@ -114,7 +114,7 @@ public class MyBot : IChessBot
 
             }
             Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
-            if (timeToStop && d > 3)
+            if (timeToStop && d >= 3)
             {
                 break;
             }
