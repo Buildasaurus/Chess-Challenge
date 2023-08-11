@@ -64,7 +64,7 @@ public class MyBot : IChessBot
 				depth -= 2;
 		}*/
         timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.9f);
+        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.98f);
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
