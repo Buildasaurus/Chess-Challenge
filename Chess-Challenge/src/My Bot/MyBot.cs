@@ -83,7 +83,7 @@ public class MyBot : IChessBot
 
 		for (int d = 1; d <= 99; d++)
 		{
-
+			Console.WriteLine($"bestmove was {bestmove}, now going at depth {d}");
 			int index = Array.IndexOf(legalmoves, bestmove);
 			if (index > 0)
 			{
