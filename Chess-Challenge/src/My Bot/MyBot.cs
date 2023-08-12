@@ -54,7 +54,7 @@ public class MyBot : IChessBot
     int endMiliseconds = 0;
     public Move Think(Board board, Timer _timer)
     {
-		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
+        /* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
 		if(counters.Count > 3)
 		{
 			int sum = (counters[^1] + counters[^2] + counters[^3]) / 3;
@@ -77,12 +77,11 @@ public class MyBot : IChessBot
         counters.Add(0);
         evalCounter = 0;
         Move[] legalmoves = board.GetLegalMoves();
-		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 
-		Move bestmove = legalmoves[0];
+        Move bestmove = legalmoves[0];
         int color = playerToMove ? 1 : -1;
         float bestEval = -1000000;
-		Move newKill = Move.NullMove;
+        Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
         for (int d = 1; d <= 9; d++)
         {
             bestEval = -1000000; //must reset besteval, or it will not reach as good evals
@@ -106,8 +105,7 @@ public class MyBot : IChessBot
                     break;
                 }
                 board.MakeMove(move);
-                (float eval,  newKill) = negamax(board, d, -1000000, 1000000, -color, 0, newKill);
-				eval = -eval;
+                float eval = -negamax(board, d, -1000000, 1000000, -color, 0);
                 if (eval > bestEval)
                 {
                     bestEval = eval;
@@ -284,7 +282,7 @@ public class MyBot : IChessBot
 
 
 
-	/*
+    /*
 	int StaticExchangeEvaluation(Move move, Board board)
 	{
 		int score = 0;
@@ -354,7 +352,7 @@ public class MyBot : IChessBot
 	// Define a data structure to store killer moves
 	Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 
-	(float, Move) negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions, Move killerMove)
+	float negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions)
 	{
 		// Transposition table lookup
 		/*ulong zobristHash = board.ZobristKey;
@@ -378,39 +376,39 @@ public class MyBot : IChessBot
 		}*/
 
 		if (board.IsInCheckmate())
-			return (-999999, Move.NullMove);
+			return -999999;
 
 		counters[^1]++;
 		if (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate())
-			return (0, Move.NullMove);
+			return 0;
 		if (depth == 0)
 		{
-			return (color * evaluation(board), Move.NullMove);
+			return color * evaluation(board);
 		}
 		// Generate legal moves
 		Move[] legalmoves = board.GetLegalMoves();
-		if(killerMove != Move.NullMove)
-			for(int i = 0; i < legalmoves.Length; i++)
+
+		// Move killer moves to the front
+		int index = 0;
+		for (int i = 0; i < legalmoves.Length; i++)
+		{
+			if (killerMoves.ContainsKey(legalmoves[i]) && killerMoves[legalmoves[i]] == depth)
 			{
-				if (legalmoves[i] == killerMove)
-				{
-					Move temp = legalmoves[0];
-					legalmoves[0] = killerMove;
-					legalmoves[i] = temp;
+				// Swap killer move with current move at index
+				Move temp = legalmoves[index];
+				legalmoves[index] = legalmoves[i];
+				legalmoves[i] = temp;
+				index++;
 
-				}
-			}		
-
-
+			}
+		}
 		float max = -100000;
-		Move newKillerMove = Move.NullMove;
+
 		foreach (Move move in legalmoves)
 		{
-			board.MakeMove(move);
 			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 3 ? 1 : 0;
 
-			(float eval, newKillerMove) = negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension, newKillerMove);
-			eval = -eval;
+			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
 			if (eval > max)
 			{
 				max = eval;
@@ -422,7 +420,7 @@ public class MyBot : IChessBot
 				// Update killer moves
 				killerMoves[move] = depth;
 
-				return (max, move);
+				return max;
 			}
 		}
 		/*
@@ -441,6 +439,6 @@ public class MyBot : IChessBot
 
 		transpositionTable[zobristHash] = newEntry;*/
 
-		return (max, Move.NullMove);
+		return max;
 	}
 }
