@@ -116,8 +116,8 @@ public class MyBot : IChessBot
                 //Console.WriteLine($"Move {move} was {eval}");
 
             }
-			Console.WriteLine($"bestmove at depth {d + 2} was {bestmove} with eval at {bestEval}");
-			Console.WriteLine($"Time used for depth {d + 2}: {startime - timer.MillisecondsRemaining} miliseconds");
+			Console.WriteLine($"bestmove at depth {d + 1} was {bestmove} with eval at {bestEval}");
+			Console.WriteLine($"Time used for depth {d + 1}: {startime - timer.MillisecondsRemaining} miliseconds");
 
 			if (timeToStop && d >= 3)
             {
