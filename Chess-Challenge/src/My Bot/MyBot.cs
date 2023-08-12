@@ -64,12 +64,32 @@ public class MyBot : IChessBot
 				depth -= 2;
 		}*/
         timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.99f);
+        int time = ChooseThinkTime(board);
+        Console.WriteLine(time);
+		endMiliseconds = timer.MillisecondsRemaining - time;
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
     int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
-    Move bestMove(Board board, bool playerToMove)
+	public int ChooseThinkTime(Board board)
+	{
+		int myTimeRemainingMs = board.IsWhiteToMove ? timer.MillisecondsRemaining : timer.OpponentMillisecondsRemaining;
+		int myIncrementMs = timer.IncrementMilliseconds;
+		// Get a fraction of remaining time to use for current move
+		double thinkTimeMs = myTimeRemainingMs / 40.0;
+
+		thinkTimeMs = Math.Min(2000, thinkTimeMs);
+
+		// Add increment
+		if (myTimeRemainingMs > myIncrementMs * 2)
+		{
+			thinkTimeMs += myIncrementMs * 0.8;
+		}
+
+		double minThinkTime = Math.Min(50, myTimeRemainingMs * 0.25);
+		return (int)Math.Ceiling(Math.Max(minThinkTime, thinkTimeMs));
+	}
+	Move bestMove(Board board, bool playerToMove)
     {
         counters.Add(0);
         evalCounter = 0;
@@ -97,7 +117,7 @@ public class MyBot : IChessBot
 
             foreach (Move move in legalmoves)
             {
-                if (timeToStop && d > 3)
+                if (timeToStop)
                 {
                     break;
                 }
@@ -114,7 +134,7 @@ public class MyBot : IChessBot
             }
 			Console.WriteLine($"bestmove at depth {d} was {bestmove} with eval at {bestEval}");
 
-			if (timeToStop && d >= 3)
+			if (timeToStop)
             {
                 break;
             }
