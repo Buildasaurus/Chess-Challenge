@@ -82,6 +82,7 @@ public class MyBot : IChessBot
 		Move bestmove = legalmoves[0];
         int color = playerToMove ? 1 : -1;
         float bestEval = -1000000;
+		Move newKill = Move.NullMove;
         for (int d = 1; d <= 9; d++)
         {
             bestEval = -1000000; //must reset besteval, or it will not reach as good evals
@@ -105,7 +106,8 @@ public class MyBot : IChessBot
                     break;
                 }
                 board.MakeMove(move);
-                float eval = -negamax(board, d, -1000000, 1000000, -color, 0);
+                (float eval,  newKill) = negamax(board, d, -1000000, 1000000, -color, 0, newKill);
+				eval = -eval;
                 if (eval > bestEval)
                 {
                     bestEval = eval;
@@ -352,7 +354,7 @@ public class MyBot : IChessBot
 	// Define a data structure to store killer moves
 	Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 
-	float negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions)
+	(float, Move) negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions, Move killerMove)
 	{
 		// Transposition table lookup
 		/*ulong zobristHash = board.ZobristKey;
@@ -376,41 +378,39 @@ public class MyBot : IChessBot
 		}*/
 
 		if (board.IsInCheckmate())
-			return -999999;
+			return (-999999, Move.NullMove);
 
 		counters[^1]++;
 		if (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate())
-			return 0;
+			return (0, Move.NullMove);
 		if (depth == 0)
 		{
-			return color * evaluation(board);
+			return (color * evaluation(board), Move.NullMove);
 		}
 		// Generate legal moves
 		Move[] legalmoves = board.GetLegalMoves();
-
-		// Move killer moves to the front
-		int index = 0;
-		for (int i = 0; i < legalmoves.Length; i++)
-		{
-			if (killerMoves.ContainsKey(legalmoves[i]) && killerMoves[legalmoves[i]] == depth)
+		if(killerMove != Move.NullMove)
+			for(int i = 0; i < legalmoves.Length; i++)
 			{
-				// Swap killer move with current move at index
-				Move temp = legalmoves[index];
-				legalmoves[index] = legalmoves[i];
-				legalmoves[i] = temp;
-				index++;
-			}
-		}
+				if (legalmoves[i] == killerMove)
+				{
+					Move temp = legalmoves[0];
+					legalmoves[0] = killerMove;
+					legalmoves[i] = temp;
 
+				}
+			}		
 
 
 		float max = -100000;
+		Move newKillerMove = Move.NullMove;
 		foreach (Move move in legalmoves)
 		{
 			board.MakeMove(move);
 			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 3 ? 1 : 0;
 
-			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
+			(float eval, newKillerMove) = negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension, newKillerMove);
+			eval = -eval;
 			if (eval > max)
 			{
 				max = eval;
@@ -422,7 +422,7 @@ public class MyBot : IChessBot
 				// Update killer moves
 				killerMoves[move] = depth;
 
-				return max;
+				return (max, move);
 			}
 		}
 		/*
@@ -441,6 +441,6 @@ public class MyBot : IChessBot
 
 		transpositionTable[zobristHash] = newEntry;*/
 
-		return max;
+		return (max, Move.NullMove);
 	}
 }
