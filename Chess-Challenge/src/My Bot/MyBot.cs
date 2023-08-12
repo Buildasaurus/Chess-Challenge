@@ -65,7 +65,7 @@ public class MyBot : IChessBot
 		}*/
 		killerMoves.Clear();
 		timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.98f);
+        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.99f);
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
@@ -389,23 +389,23 @@ public class MyBot : IChessBot
 		Move[] legalmoves = board.GetLegalMoves();
 
 		// Move killer moves to the front
-		int index = 0;
+		/*int index = 0;
 		for (int i = 0; i < legalmoves.Length; i++)
 		{
-			if (killerMoves.ContainsKey(legalmoves[i]) && killerMoves[legalmoves[i]] == depth)
+			killerMoves.TryGetValue(legalmoves[index], out int value);
+			if (killerMoves.ContainsKey(legalmoves[i]) && killerMoves[legalmoves[i]] > value)
 			{
 				// Swap killer move with current move at index
 				Move temp = legalmoves[index];
 				legalmoves[index] = legalmoves[i];
 				legalmoves[i] = temp;
 				index++;
-
 			}
-		}
+		}*/
 		float max = -100000;
-
 		foreach (Move move in legalmoves)
 		{
+			board.MakeMove(move);
 			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 3 ? 1 : 0;
 
 			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
@@ -418,7 +418,8 @@ public class MyBot : IChessBot
 			if (alpha > beta)
 			{
 				// Update killer moves
-				killerMoves[move] = depth;
+				/*killerMoves.TryGetValue(move, out int value);
+				killerMoves[move] = value + 1;*/
 
 				return max;
 			}

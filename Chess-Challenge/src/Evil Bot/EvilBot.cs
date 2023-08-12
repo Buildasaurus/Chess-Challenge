@@ -60,7 +60,7 @@ namespace ChessChallenge.Example
 					depth -= 2;
 			}*/
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.98f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.99f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
