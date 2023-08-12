@@ -12,7 +12,6 @@ namespace ChessChallenge.Example
 	public class EvilBot : IChessBot
 	{
 		List<int> counters = new List<int>();
-		int evalCounter = 0;
 		int[,] knightMatrix = {
 			{-50, -40, -30, -30, -30, -30, -40, -50},
 			{-40, -20, 0, 0, 0, 0, -20, -40},
@@ -68,7 +67,6 @@ namespace ChessChallenge.Example
 		Move bestMove(Board board, bool playerToMove)
 		{
 			counters.Add(0);
-			evalCounter = 0;
 			Move[] legalmoves = board.GetLegalMoves();
 
 			Move bestmove = legalmoves[0];
@@ -115,8 +113,7 @@ namespace ChessChallenge.Example
 					break;
 				}
 			}
-			Console.WriteLine("mybot " + counters.Count);
-			Console.WriteLine("mybit " + evalCounter);
+			Console.WriteLine("evilbot node count " + counters[^1]);
 			return bestmove;
 		}
 
@@ -152,7 +149,6 @@ namespace ChessChallenge.Example
 
 		float evaluation(Board board)
 		{
-			evalCounter++;
 			float eval = 0;
 			eval += materialEval(board, true);
 			eval -= materialEval(board, false);

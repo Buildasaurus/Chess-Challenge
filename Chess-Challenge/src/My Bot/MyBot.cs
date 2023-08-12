@@ -16,7 +16,6 @@ public class MyBot : IChessBot
 {
 
     List<int> counters = new List<int>();
-    int evalCounter = 0;
     int[,] knightMatrix = {
             {-50, -40, -30, -30, -30, -30, -40, -50},
             {-40, -20, 0, 0, 0, 0, -20, -40},
@@ -75,13 +74,13 @@ public class MyBot : IChessBot
 		/*lookups = 0;
 		entryCount = 0;*/
         counters.Add(0);
-        evalCounter = 0;
         Move[] legalmoves = board.GetLegalMoves();
 
         Move bestmove = legalmoves[0];
         int color = playerToMove ? 1 : -1;
-        float bestEval = -1000000;
+        int bestEval = -1000000;
         Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		int startime = timer.MillisecondsRemaining;
         for (int d = 1; d <= 9; d++)
         {
             bestEval = -1000000; //must reset besteval, or it will not reach as good evals
@@ -100,12 +99,14 @@ public class MyBot : IChessBot
 
             foreach (Move move in legalmoves)
             {
-                if (timeToStop && d > 3)
+				if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
+
+				if (timeToStop && d > 3)
                 {
                     break;
                 }
                 board.MakeMove(move);
-                float eval = -negamax(board, d, -1000000, 1000000, -color, 0);
+                int eval = -negamax(board, d, -1000000, 1000000, -color, 0);
                 if (eval > bestEval)
                 {
                     bestEval = eval;
@@ -115,17 +116,19 @@ public class MyBot : IChessBot
                 //Console.WriteLine($"Move {move} was {eval}");
 
             }
-			Console.WriteLine($"bestmove at depth {d} was {bestmove} with eval at {bestEval}");
+			Console.WriteLine($"bestmove at depth {d + 2} was {bestmove} with eval at {bestEval}");
+			Console.WriteLine($"Time used for depth {d + 2}: {startime - timer.MillisecondsRemaining} miliseconds");
 
 			if (timeToStop && d >= 3)
             {
                 break;
             }
-        }
+
+		}
 		Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
 
-		Console.WriteLine("mybot " + counters.Count);
-        Console.WriteLine("mybot " + evalCounter);
+		Console.WriteLine("mybot node count " + counters[^1]);
+		Console.WriteLine($"Time used for completed search: {startime - timer.MillisecondsRemaining} miliseconds");
 		/*Console.WriteLine("useful lookups:  " + lookups);
 		Console.WriteLine("lookuptable count " + transpositionTable.Count);
 		Console.WriteLine("Entry count " + entryCount);*/
@@ -136,36 +139,23 @@ public class MyBot : IChessBot
 
 
 
-    int MoveOrderingHeuristic(Move move, Board board)
+	int MoveOrderingHeuristic(Move move, Board board)
+	{
+		int score = 0;
+
+		// Give higher scores to captures and promotions
+		if (move.IsCapture)
+		{
+			// Use MVV-LVA heuristic
+			score += 10 * pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
+		}
+		if (move.IsPromotion)
+			score += 900;
+		return score;
+	}
+	int evaluation(Board board)
     {
-        int score = 0;
-
-        // Give higher scores to captures and promotions
-        if (move.IsCapture)
-        {
-            // Use MVV-LVA heuristic
-            score += 10 * pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
-            if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
-                score = 100000;
-        }
-        if (move.IsPromotion)
-            score += 900;
-
-        // Give a small bonus for checks
-        board.MakeMove(move);
-        if (board.IsInCheck())
-            score += 100;
-        board.UndoMove(move);
-        if (board.SquareIsAttackedByOpponent(move.TargetSquare))
-            score -= pieceValues[(int)move.MovePieceType - 1];
-
-        return score;
-    }
-
-    float evaluation(Board board)
-    {
-        evalCounter++;
-        float eval = 0;
+        int eval = 0;
         eval += materialEval(board, true);
         eval -= materialEval(board, false);
 
@@ -247,13 +237,10 @@ public class MyBot : IChessBot
 
     int materialEval(Board board, bool color)
     {
-        if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
         int eval = 0;
-        PieceType[] piectypes = { PieceType.Pawn, PieceType.Knight, PieceType.Bishop, PieceType.Rook,
-            PieceType.Queen, PieceType.King};
-        for (int i = 0; i < piectypes.Length; i++)
+        for (int i = 0; i < 6; i++)
         {
-            PieceList pieces = board.GetPieceList(piectypes[i], color);
+            PieceList pieces = board.GetPieceList((PieceType)(i+1), color);
             eval += pieceValues[i] * pieces.Count;
             foreach (Piece piece in pieces)
             {
@@ -352,7 +339,7 @@ public class MyBot : IChessBot
 	// Define a data structure to store killer moves
 	Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 
-	float negamax(Board board, int depth, float alpha, float beta, int color, int numExtensions)
+	int negamax(Board board, int depth, int alpha, int beta, int color, int numExtensions)
 	{
 		// Transposition table lookup
 		/*ulong zobristHash = board.ZobristKey;
@@ -387,6 +374,7 @@ public class MyBot : IChessBot
 		}
 		// Generate legal moves
 		Move[] legalmoves = board.GetLegalMoves();
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 
 		// Move killer moves to the front
 		/*int index = 0;
@@ -402,20 +390,23 @@ public class MyBot : IChessBot
 				index++;
 			}
 		}*/
-		float max = -100000;
+		//Console.WriteLine($"{MoveOrderingHeuristic(legalmoves[0], board)} is first - last is: {MoveOrderingHeuristic(legalmoves[^1], board)}");
+		int max = -100000;
 		foreach (Move move in legalmoves)
 		{
-			board.MakeMove(move);
-			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 3 ? 1 : 0;
 
-			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
+			board.MakeMove(move);
+			//int extension = board.IsInCheck() && numExtensions < 3 ? 1 : 0;
+			//float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
+			int eval = -negamax(board, depth - 1, -beta, -alpha, -color, numExtensions);
+
 			if (eval > max)
 			{
 				max = eval;
 			}
 			board.UndoMove(move);
 			alpha = Math.Max(alpha, max);
-			if (alpha > beta)
+			if (alpha >= beta)
 			{
 				// Update killer moves
 				/*killerMoves.TryGetValue(move, out int value);
