@@ -64,7 +64,7 @@ public class MyBot : IChessBot
 				depth -= 2;
 		}*/
         timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.98f);
+        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.99f);
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
@@ -357,11 +357,12 @@ public class MyBot : IChessBot
         foreach (Move move in board.GetLegalMoves())
         {
             board.MakeMove(move);
-			int extension = board.IsInCheck() && numExtensions < 16 ? 1 : 0;
-            if (numExtensions > 8) Console.WriteLine($"{numExtensions}");
-			//int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 10 ? 1 : 0;
+			//int extension = board.IsInCheck() && numExtensions < 16 ? 1 : 0;
+			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 3 ? 1 : 0;
 
-			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + 1);
+			//if (numExtensions > 8) Console.WriteLine($"{numExtensions}");
+
+			float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
             if (eval > max)
             {
                 max = eval;
