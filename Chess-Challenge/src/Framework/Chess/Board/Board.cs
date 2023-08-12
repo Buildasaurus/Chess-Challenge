@@ -54,7 +54,6 @@ namespace ChessChallenge.Chess
 
         // List of (hashed) positions since last pawn move or capture (for detecting 3-fold repetition)
         public Stack<ulong> RepetitionPositionHistory;
-        public Stack<string> RepetitionPositionHistoryFen;
 
         Stack<GameState> gameStateHistory;
         public GameState currentGameState;
@@ -270,7 +269,6 @@ namespace ChessChallenge.Chess
                 if (!inSearch)
                 {
                     RepetitionPositionHistory.Clear();
-                    RepetitionPositionHistoryFen.Clear();
                 }
                 newFiftyMoveCounter = 0;
             }
@@ -283,7 +281,6 @@ namespace ChessChallenge.Chess
             if (!inSearch)
             {
                 RepetitionPositionHistory.Push(newState.zobristKey);
-                RepetitionPositionHistoryFen.Push(FenUtility.CurrentFen(this));
                 AllGameMoves.Add(move);
             }
         }
@@ -375,7 +372,6 @@ namespace ChessChallenge.Chess
             if (!inSearch && RepetitionPositionHistory.Count > 0)
             {
                 RepetitionPositionHistory.Pop();
-                RepetitionPositionHistoryFen.Pop();
             }
             if (!inSearch)
             {
@@ -526,7 +522,6 @@ namespace ChessChallenge.Chess
             RepetitionPositionHistory.Push(zobristKey);
 
             gameStateHistory.Push(currentGameState);
-            RepetitionPositionHistoryFen.Push(FenUtility.CurrentFen(this));
         }
 
         void UpdateSliderBitboards()
@@ -551,7 +546,6 @@ namespace ChessChallenge.Chess
             KingSquare = new int[2];
 
             RepetitionPositionHistory = new Stack<ulong>(capacity: 64);
-            RepetitionPositionHistoryFen = new Stack<string>(capacity: 64);
             gameStateHistory = new Stack<GameState>(capacity: 64);
 
             currentGameState = new GameState();

@@ -12,15 +12,14 @@ namespace ChessChallenge.Application
         public readonly HumanPlayer? Human;
 
         double secondsElapsed;
-        int incrementAddedMs;
-        int baseTimeMs;
+        int baseTimeMS;
 
-        public ChessPlayer(object instance, ChallengeController.PlayerType type, int baseTimeMs = int.MaxValue)
+        public ChessPlayer(object instance, ChallengeController.PlayerType type, int baseTimeMS = int.MaxValue)
         {
             this.PlayerType = type;
             Bot = instance as IChessBot;
             Human = instance as HumanPlayer;
-            this.baseTimeMs = baseTimeMs;
+            this.baseTimeMS = baseTimeMS;
 
         }
 
@@ -40,24 +39,19 @@ namespace ChessChallenge.Application
             secondsElapsed += dt;
         }
 
-        public void AddIncrement(int incrementMs)
-        {
-            incrementAddedMs += incrementMs;
-        }
-
         public int TimeRemainingMs
         {
             get
             {
-                if (baseTimeMs == int.MaxValue)
+                if (baseTimeMS == int.MaxValue)
                 {
-                    return baseTimeMs;
+                    return baseTimeMS;
                 }
-                return (int)Math.Ceiling(Math.Max(0, baseTimeMs - secondsElapsed * 1000.0 + incrementAddedMs));
+                return (int)Math.Round(Math.Max(0, baseTimeMS - secondsElapsed * 1000.0));
             }
         }
 
-        public void SubscribeToMoveChosenEventIfHuman(Action<Chess.Move> action)
+        public void SubscribeToMoveChosenEventIfHuman(Action<ChessChallenge.Chess.Move> action)
         {
             if (Human != null)
             {
