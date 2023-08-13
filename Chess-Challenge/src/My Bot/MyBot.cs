@@ -350,7 +350,6 @@ public class MyBot : IChessBot
 
 		//start seraching
 		int max = -100000000;
-		Move bestFoundMove = Move.NullMove;
 		foreach (Move move in legalmoves)
 		{
 			//Early stop at top level
@@ -371,14 +370,12 @@ public class MyBot : IChessBot
 					overAllBestMove = move;
 					Console.WriteLine($"new Overall Best move: {move}");
 				}
-				bestFoundMove = move;
 				max = eval;
 			}
 			board.UndoMove(move);
 			alpha = Math.Max(alpha, max);
-			if (alpha >= beta && ply != 0)
+			if (alpha >= beta && ply != 0) //alpha > beta shouldn't be possible at root, but anyways.
 			{
-
 				return max;
 			}
 
