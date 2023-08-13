@@ -336,8 +336,8 @@ public class MyBot : IChessBot
 				else // upper bound
 					beta = Math.Min(beta, entry.value);
 
-				/*if (alpha >= beta)
-					return entry.value;*/
+				if (alpha >= beta)
+					return entry.value;
 			}
 		}
 
