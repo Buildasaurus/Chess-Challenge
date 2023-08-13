@@ -79,6 +79,7 @@ public class MyBot : IChessBot
         counters.Add(0);
 		int color = playerToMove ? 1 : -1;
 		int bestEval = 0;
+		int thinkStart = timer.MillisecondsRemaining;
 		for (int d = 1; d <= 16; d++)
         {
 			if (timeToStop) break;
@@ -94,6 +95,7 @@ public class MyBot : IChessBot
 		Console.WriteLine("lookuptable count " + transpositionTable.Count);
 		Console.WriteLine("Entry count " + entryCount);
 		Console.WriteLine($"Final best move was {overAllBestMove} with eval at {bestEval}");
+		Console.WriteLine($"Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
 
 
 
@@ -327,15 +329,15 @@ public class MyBot : IChessBot
 			{
 				lookups++;
 				bestMove = entry.bestMove;
-				if (entry.type == 0) // exact value
-					return entry.value;
-				else if (entry.type == 1) // lower bound
+				//if (entry.type == 0) // exact value
+				//	return entry.value;
+				if (entry.type == 1) // lower bound
 					alpha = Math.Max(alpha, entry.value);
 				else // upper bound
 					beta = Math.Min(beta, entry.value);
 
-				if (alpha >= beta)
-					return entry.value;
+				/*if (alpha >= beta)
+					return entry.value;*/
 			}
 		}
 
@@ -368,6 +370,19 @@ public class MyBot : IChessBot
 				legalmoves[0] = overAllBestMove;
 			}
 		}
+		//move the best move from lookup to top.
+		if (ply != 0 && bestMove != Move.NullMove)
+		{
+			int index = Array.IndexOf(legalmoves, bestMove);
+			if (index > 0)
+			{
+				for (int i = index; i > 0; i--)
+				{
+					legalmoves[i] = legalmoves[i - 1];
+				}
+				legalmoves[0] = bestMove;
+			}
+		}
 		Move bestFoundMove = Move.NullMove;
 
 		//start searching
@@ -390,15 +405,30 @@ public class MyBot : IChessBot
 				if(ply == 0)
 				{
 					overAllBestMove = move;
-					bestFoundMove = move;
 					Console.WriteLine($"new Overall Best move: {move}");
 				}
+				bestFoundMove = move;
 				max = eval;
 			}
 			board.UndoMove(move);
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta && ply != 0) //alpha > beta shouldn't be possible at root, but anyways.
 			{
+				entryCount++;
+
+				// Transposition table store
+				TTEntry d;
+				d.depth = depth;
+				d.value = max;
+				if (alpha > max)
+					d.type = 2; // upper bound
+				else if (beta < max)
+					d.type = 1; // lower bound
+				else
+					d.type = 0; // exact value
+				d.bestMove = bestFoundMove;
+
+				transpositionTable[zobristHash] = d;
 				return max;
 			}
 
