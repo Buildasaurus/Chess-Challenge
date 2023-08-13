@@ -3,7 +3,6 @@ using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
 using System;
-using Raylib_cs;
 
 
 /// <summary>
@@ -318,6 +317,28 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	int negamax(Board board, int depth, int ply, int alpha, int beta, int color, int numExtensions)
 	{
+		// Transposition table lookup
+		Move bestMove = Move.NullMove;
+		ulong zobristHash = board.ZobristKey;
+		if (transpositionTable.ContainsKey(zobristHash))
+		{
+			TTEntry entry = transpositionTable[zobristHash];
+			if (entry.depth >= depth)
+			{
+				lookups++;
+				bestMove = entry.bestMove;
+				if (entry.type == 0) // exact value
+					return entry.value;
+				else if (entry.type == 1) // lower bound
+					alpha = Math.Max(alpha, entry.value);
+				else // upper bound
+					beta = Math.Min(beta, entry.value);
+
+				if (alpha >= beta)
+					return entry.value;
+			}
+		}
+
 		if (ply == 0) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 		//return early statements.
@@ -347,8 +368,9 @@ public class MyBot : IChessBot
 				legalmoves[0] = overAllBestMove;
 			}
 		}
+		Move bestFoundMove = Move.NullMove;
 
-		//start seraching
+		//start searching
 		int max = -100000000;
 		foreach (Move move in legalmoves)
 		{
@@ -368,6 +390,7 @@ public class MyBot : IChessBot
 				if(ply == 0)
 				{
 					overAllBestMove = move;
+					bestFoundMove = move;
 					Console.WriteLine($"new Overall Best move: {move}");
 				}
 				max = eval;
@@ -380,6 +403,23 @@ public class MyBot : IChessBot
 			}
 
 		}
+
+		entryCount++;
+
+		// Transposition table store
+		TTEntry newEntry;
+		newEntry.depth = depth;
+		newEntry.value = max;
+		if (alpha > max)
+			newEntry.type = 2; // upper bound
+		else if (beta < max)
+			newEntry.type = 1; // lower bound
+		else
+			newEntry.type = 0; // exact value
+		newEntry.bestMove = bestFoundMove;
+
+		transpositionTable[zobristHash] = newEntry;
 		return max;
+
 	}
 }
