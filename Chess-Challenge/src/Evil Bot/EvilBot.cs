@@ -49,6 +49,7 @@ namespace ChessChallenge.Example
 		int endMiliseconds = 0;
 		public Move Think(Board board, Timer _timer)
 		{
+			Console.WriteLine("-----Evil bot thinking----");
 			/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
 			if(counters.Count > 3)
 			{
@@ -58,27 +59,30 @@ namespace ChessChallenge.Example
 				if (sum > 500000 && depth > 3)
 					depth -= 2;
 			}*/
+			killerMoves.Clear();
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.99f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
 		int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
 		Move bestMove(Board board, bool playerToMove)
 		{
+			/*lookups = 0;
+			entryCount = 0;*/
 			counters.Add(0);
 			Move[] legalmoves = board.GetLegalMoves();
 
 			Move bestmove = legalmoves[0];
 			int color = playerToMove ? 1 : -1;
-			float bestEval = -1000000;
+			int bestEval = -1000000;
 			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+			int startime = timer.MillisecondsRemaining;
 			for (int d = 1; d <= 9; d++)
 			{
 				bestEval = -1000000; //must reset besteval, or it will not reach as good evals
 									 //as last round, and not realize there are better moves
 
-				Console.WriteLine($"bestmove was {bestmove}, now going at depth {d}");
 
 				int index = Array.IndexOf(legalmoves, bestmove);
 				if (index > 0)
@@ -92,12 +96,14 @@ namespace ChessChallenge.Example
 
 				foreach (Move move in legalmoves)
 				{
+					if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
+
 					if (timeToStop && d > 3)
 					{
 						break;
 					}
 					board.MakeMove(move);
-					float eval = -negamax(board, d, -1000000, 1000000, -color);
+					int eval = -negamax(board, d, -1000000, 1000000, -color, 0);
 					if (eval > bestEval)
 					{
 						bestEval = eval;
@@ -107,13 +113,24 @@ namespace ChessChallenge.Example
 					//Console.WriteLine($"Move {move} was {eval}");
 
 				}
-				Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
+				Console.WriteLine($"bestmove at depth {d + 1} was {bestmove} with eval at {bestEval}");
+				Console.WriteLine($"Time used for depth {d + 1}: {startime - timer.MillisecondsRemaining} miliseconds");
+
 				if (timeToStop && d >= 3)
 				{
 					break;
 				}
+
 			}
-			Console.WriteLine("evilbot node count " + counters[^1]);
+			Console.WriteLine($"Final best move was {bestmove} with eval at {bestEval}");
+
+			Console.WriteLine("node count " + counters[^1]);
+			Console.WriteLine($"Time used for completed search: {startime - timer.MillisecondsRemaining} miliseconds");
+			/*Console.WriteLine("useful lookups:  " + lookups);
+			Console.WriteLine("lookuptable count " + transpositionTable.Count);
+			Console.WriteLine("Entry count " + entryCount);*/
+
+
 			return bestmove;
 		}
 
@@ -128,28 +145,14 @@ namespace ChessChallenge.Example
 			{
 				// Use MVV-LVA heuristic
 				score += 10 * pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
-				if (!board.SquareIsAttackedByOpponent(move.TargetSquare))
-					score = 100000;
 			}
 			if (move.IsPromotion)
 				score += 900;
-			//give small bonus for perhaps retaking or taking the last piece moved.
-			if (board.GameMoveHistory.Length > 0 && board.GameMoveHistory[^1].TargetSquare == move.TargetSquare)
-				score += 50;
-			// Give a small bonus for checks
-			board.MakeMove(move);
-			if (board.IsInCheck())
-				score += 100;
-			board.UndoMove(move);
-			if (board.SquareIsAttackedByOpponent(move.TargetSquare))
-				score -= pieceValues[(int)move.MovePieceType - 1];
-
 			return score;
 		}
-
-		float evaluation(Board board)
+		int evaluation(Board board)
 		{
-			float eval = 0;
+			int eval = 0;
 			eval += materialEval(board, true);
 			eval -= materialEval(board, false);
 
@@ -231,20 +234,17 @@ namespace ChessChallenge.Example
 
 		int materialEval(Board board, bool color)
 		{
-			if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
 			int eval = 0;
-			PieceType[] piectypes = { PieceType.Pawn, PieceType.Knight, PieceType.Bishop, PieceType.Rook,
-			PieceType.Queen, PieceType.King};
-			for (int i = 0; i < piectypes.Length; i++)
+			for (int i = 0; i < 6; i++)
 			{
-				PieceList pieces = board.GetPieceList(piectypes[i], color);
+				PieceList pieces = board.GetPieceList((PieceType)(i + 1), color);
 				eval += pieceValues[i] * pieces.Count;
 				foreach (Piece piece in pieces)
 				{
 					switch (piece.PieceType)
 					{
 						case PieceType.Pawn:
-							eval += (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+							eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
 							break;
 						case PieceType.Knight:
 							eval += knightMatrix[piece.Square.Rank, piece.Square.File];
@@ -320,44 +320,114 @@ namespace ChessChallenge.Example
 		}*/
 
 
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="board"></param>
-		/// <param name="depth"></param>
-		/// <param name="alpha"></param>
-		/// <param name="beta"></param>
-		/// <param name="isMaximizingPlayer">True if it is white to play</param>
-		/// <returns></returns>
-		float negamax(Board board, int depth, float alpha, float beta, int color)
+		/*
+		// Define a structure to store transposition table entries
+		struct TTEntry
 		{
+			public float value;
+			public int depth;
+			public int type; // 0 = exact, 1 = lower bound, 2 = upper bound
+		}
+		int lookups = 0;
+		int entryCount = 0;
+
+		// Create a transposition table
+		Dictionary<ulong, TTEntry> transpositionTable = new Dictionary<ulong, TTEntry>(5000000);*/
+		// Define a data structure to store killer moves
+		Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
+
+		int negamax(Board board, int depth, int alpha, int beta, int color, int numExtensions)
+		{
+			// Transposition table lookup
+			/*ulong zobristHash = board.ZobristKey;
+			if (transpositionTable.ContainsKey(zobristHash))
+			{
+				TTEntry entry = transpositionTable[zobristHash];
+				if (entry.depth >= depth)
+				{
+					lookups++;
+
+					if (entry.type == 0) // exact value
+						return entry.value;
+					else if (entry.type == 1) // lower bound
+						alpha = Math.Max(alpha, entry.value);
+					else // upper bound
+						beta = Math.Min(beta, entry.value);
+
+					if (alpha >= beta)
+						return entry.value;
+				}
+			}*/
+
 			if (board.IsInCheckmate())
 				return -999999;
+
 			counters[^1]++;
-			if (board.IsRepeatedPosition() || board.IsDraw())
+			if (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate())
 				return 0;
 			if (depth == 0)
 			{
 				return color * evaluation(board);
 			}
+			// Generate legal moves
+			Move[] legalmoves = board.GetLegalMoves();
+			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 
-			float max = -100000;
-			foreach (Move move in board.GetLegalMoves())
+			// Move killer moves to the front
+			/*int index = 0;
+			for (int i = 0; i < legalmoves.Length; i++)
 			{
+				killerMoves.TryGetValue(legalmoves[index], out int value);
+				if (killerMoves.ContainsKey(legalmoves[i]) && killerMoves[legalmoves[i]] > value)
+				{
+					// Swap killer move with current move at index
+					Move temp = legalmoves[index];
+					legalmoves[index] = legalmoves[i];
+					legalmoves[i] = temp;
+					index++;
+				}
+			}*/
+			//Console.WriteLine($"{MoveOrderingHeuristic(legalmoves[0], board)} is first - last is: {MoveOrderingHeuristic(legalmoves[^1], board)}");
+			int max = -100000;
+			foreach (Move move in legalmoves)
+			{
+
 				board.MakeMove(move);
-				float eval = -negamax(board, depth - 1, -beta, -alpha, -color);
+				//int extension = board.IsInCheck() && numExtensions < 3 ? 1 : 0;
+				//float eval = -negamax(board, depth - 1 + extension, -beta, -alpha, -color, numExtensions + extension);
+				int eval = -negamax(board, depth - 1, -beta, -alpha, -color, numExtensions);
+
 				if (eval > max)
 				{
 					max = eval;
 				}
 				board.UndoMove(move);
 				alpha = Math.Max(alpha, max);
-				if (beta <= alpha)
+				if (alpha >= beta)
 				{
+					// Update killer moves
+					/*killerMoves.TryGetValue(move, out int value);
+					killerMoves[move] = value + 1;*/
+
 					return max;
 				}
 			}
+			/*
+			entryCount++;
+
+			// Transposition table store
+			TTEntry newEntry;
+			newEntry.depth = depth;
+			newEntry.value = max;
+			if (alpha > max)
+				newEntry.type = 2; // upper bound
+			else if (beta < max)
+				newEntry.type = 1; // lower bound
+			else
+				newEntry.type = 0; // exact value
+
+			transpositionTable[zobristHash] = newEntry;*/
+
 			return max;
 		}
 	}

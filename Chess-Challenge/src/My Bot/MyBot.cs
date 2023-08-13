@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
 using System;
+using Raylib_cs;
 
 
 /// <summary>
@@ -53,7 +54,9 @@ public class MyBot : IChessBot
     int endMiliseconds = 0;
     public Move Think(Board board, Timer _timer)
     {
-        /* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
+		Console.WriteLine("-----My bot thinking----");
+
+		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
 		if(counters.Count > 3)
 		{
 			int sum = (counters[^1] + counters[^2] + counters[^3]) / 3;
@@ -62,17 +65,17 @@ public class MyBot : IChessBot
 			if (sum > 500000 && depth > 3)
 				depth -= 2;
 		}*/
-		killerMoves.Clear();
+		//killerMoves.Clear();
 		timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.99f);
+        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.985f);
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
     int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
     Move bestMove(Board board, bool playerToMove)
     {
-		/*lookups = 0;
-		entryCount = 0;*/
+		lookups = 0;
+		entryCount = 0;
         counters.Add(0);
         Move[] legalmoves = board.GetLegalMoves();
 
@@ -129,9 +132,9 @@ public class MyBot : IChessBot
 
 		Console.WriteLine("mybot node count " + counters[^1]);
 		Console.WriteLine($"Time used for completed search: {startime - timer.MillisecondsRemaining} miliseconds");
-		/*Console.WriteLine("useful lookups:  " + lookups);
+		Console.WriteLine("useful lookups:  " + lookups);
 		Console.WriteLine("lookuptable count " + transpositionTable.Count);
-		Console.WriteLine("Entry count " + entryCount);*/
+		Console.WriteLine("Entry count " + entryCount);
 
 
 		return bestmove;
@@ -323,33 +326,35 @@ public class MyBot : IChessBot
 	}*/
 
 
-	/*
+	
 	// Define a structure to store transposition table entries
 	struct TTEntry
 	{
-		public float value;
+		public int value;
 		public int depth;
 		public int type; // 0 = exact, 1 = lower bound, 2 = upper bound
+		public Move bestMove;
 	}
 	int lookups = 0;
 	int entryCount = 0;
 
 	// Create a transposition table
-	Dictionary<ulong, TTEntry> transpositionTable = new Dictionary<ulong, TTEntry>(5000000);*/
+	Dictionary<ulong, TTEntry> transpositionTable = new Dictionary<ulong, TTEntry>(5000000);
 	// Define a data structure to store killer moves
-	Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
+	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 
 	int negamax(Board board, int depth, int alpha, int beta, int color, int numExtensions)
 	{
 		// Transposition table lookup
-		/*ulong zobristHash = board.ZobristKey;
+		Move bestMove = Move.NullMove;
+		ulong zobristHash = board.ZobristKey;
 		if (transpositionTable.ContainsKey(zobristHash))
 		{
 			TTEntry entry = transpositionTable[zobristHash];
 			if (entry.depth >= depth)
 			{
 				lookups++;
-
+				bestMove = entry.bestMove;
 				if (entry.type == 0) // exact value
 					return entry.value;
 				else if (entry.type == 1) // lower bound
@@ -360,7 +365,7 @@ public class MyBot : IChessBot
 				if (alpha >= beta)
 					return entry.value;
 			}
-		}*/
+		}
 
 		if (board.IsInCheckmate())
 			return -999999;
@@ -375,6 +380,19 @@ public class MyBot : IChessBot
 		// Generate legal moves
 		Move[] legalmoves = board.GetLegalMoves();
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		if(bestMove != Move.NullMove)
+		{
+			int index = Array.IndexOf(legalmoves, bestMove);
+			if (index > 0)
+			{
+				for (int i = index; i > 0; i--)
+				{
+					legalmoves[i] = legalmoves[i - 1];
+				}
+				legalmoves[0] = bestMove;
+			}
+		}
+
 
 		// Move killer moves to the front
 		/*int index = 0;
@@ -392,6 +410,7 @@ public class MyBot : IChessBot
 		}*/
 		//Console.WriteLine($"{MoveOrderingHeuristic(legalmoves[0], board)} is first - last is: {MoveOrderingHeuristic(legalmoves[^1], board)}");
 		int max = -100000;
+		Move bestFoundMove = Move.NullMove;
 		foreach (Move move in legalmoves)
 		{
 
@@ -402,6 +421,7 @@ public class MyBot : IChessBot
 
 			if (eval > max)
 			{
+				bestFoundMove = move;
 				max = eval;
 			}
 			board.UndoMove(move);
@@ -415,7 +435,7 @@ public class MyBot : IChessBot
 				return max;
 			}
 		}
-		/*
+		
 		entryCount++;
 
 		// Transposition table store
@@ -428,8 +448,9 @@ public class MyBot : IChessBot
 			newEntry.type = 1; // lower bound
 		else
 			newEntry.type = 0; // exact value
+		newEntry.bestMove = bestFoundMove;
 
-		transpositionTable[zobristHash] = newEntry;*/
+		transpositionTable[zobristHash] = newEntry;
 
 		return max;
 	}
