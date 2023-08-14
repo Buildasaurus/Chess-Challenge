@@ -382,7 +382,9 @@ public class MyBot : IChessBot
 			}
 
 			board.MakeMove(move);
-			int eval = -negamax(board, depth - 1, ply + 1, -beta, -alpha, -color, numExtensions);
+			int extension = (board.IsInCheck() || (board.GameMoveHistory.Length > 0) && (move.TargetSquare == board.GameMoveHistory[^1].TargetSquare)) && numExtensions < 16 ? 1 : 0;
+
+			int eval = -negamax(board, depth - 1 + extension, ply + 1, -beta, -alpha, -color, numExtensions);
 
 			if (eval > max)
 			{
