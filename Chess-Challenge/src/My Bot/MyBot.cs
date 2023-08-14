@@ -54,16 +54,6 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer _timer)
     {
 		Console.WriteLine("-----My bot thinking----");
-
-		/* Can't handle the time - it time outs. even if on so low as 8000 moves, adding two more depth takes it to 800.000
-		if(counters.Count > 3)
-		{
-			int sum = (counters[^1] + counters[^2] + counters[^3]) / 3;
-			if (sum < 8000)
-				depth += 2;
-			if (sum > 500000 && depth > 3)
-				depth -= 2;
-		}*/
 		//killerMoves.Clear();
 		timer = _timer;
         endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.985f);
@@ -80,17 +70,17 @@ public class MyBot : IChessBot
 		int color = playerToMove ? 1 : -1;
 		int bestEval = 0;
 		int thinkStart = timer.MillisecondsRemaining;
-		for (int d = 1; d <= 16; d++)
+		for (int d = 1; d <= 32; d++)
         {
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
 
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
-			Console.WriteLine($"bestmove at depth {d + 1} was {overAllBestMove} with eval at {bestEval}");
-			Console.WriteLine($"Time used for depth {d + 1}: {startime - timer.MillisecondsRemaining} miliseconds");
+			Console.WriteLine($"bestmove at depth {d} was {overAllBestMove} with eval at {bestEval}");
+			Console.WriteLine($"Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
 		}
-		Console.WriteLine("mybot node count " + counters[^1]);
+		Console.WriteLine("-------node count------- " + counters[^1]);
 		Console.WriteLine("useful lookups:  " + lookups);
 		Console.WriteLine("lookuptable count " + transpositionTable.Count);
 		Console.WriteLine("Entry count " + entryCount);
@@ -221,20 +211,19 @@ public class MyBot : IChessBot
                         eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
                         break;
                     case PieceType.King:
-                        if (board.GameMoveHistory.Length < 50)
+                        if (board.GameMoveHistory.Length < 40)
                             eval += getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
                         break;
                 }
             }
         }
-
         return eval;
     }
 
 
 
 
-    /*
+	/*
 	int StaticExchangeEvaluation(Move move, Board board)
 	{
 		int score = 0;
@@ -286,8 +275,18 @@ public class MyBot : IChessBot
 		}
 		return bestCapture;
 	}*/
-
-
+	void MoveToFrontOfArray(ref Move[] array, Move move)
+	{
+		int index = Array.IndexOf(array, move);
+		if (index > 0)
+		{
+			for (int i = index; i > 0; i--)
+			{
+				array[i] = array[i - 1];
+			}
+			array[0] = move;
+		}
+	}
 	
 	// Define a structure to store transposition table entries
 	struct TTEntry
@@ -336,8 +335,8 @@ public class MyBot : IChessBot
 				else // upper bound
 					beta = Math.Min(beta, entry.value);
 
-				if (alpha >= beta)
-					return entry.value;
+				//if (alpha >= beta)
+				//	return entry.value;
 			}
 		}
 
@@ -360,28 +359,12 @@ public class MyBot : IChessBot
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 		if (ply == 0 && overAllBestMove != Move.NullMove)
 		{
-			int index = Array.IndexOf(legalmoves, overAllBestMove);
-			if (index > 0)
-			{
-				for (int i = index; i > 0; i--)
-				{
-					legalmoves[i] = legalmoves[i - 1];
-				}
-				legalmoves[0] = overAllBestMove;
-			}
+			MoveToFrontOfArray(ref legalmoves, overAllBestMove);
 		}
 		//move the best move from lookup to top.
-		if (ply != 0 && bestMove != Move.NullMove)
+		else if (ply != 0 && bestMove != Move.NullMove)
 		{
-			int index = Array.IndexOf(legalmoves, bestMove);
-			if (index > 0)
-			{
-				for (int i = index; i > 0; i--)
-				{
-					legalmoves[i] = legalmoves[i - 1];
-				}
-				legalmoves[0] = bestMove;
-			}
+			MoveToFrontOfArray(ref legalmoves, bestMove);
 		}
 		Move bestFoundMove = Move.NullMove;
 
@@ -414,26 +397,19 @@ public class MyBot : IChessBot
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta && ply != 0) //alpha > beta shouldn't be possible at root, but anyways.
 			{
-				entryCount++;
+				storeEntry(depth, alpha, beta, max, bestFoundMove, zobristHash);
 
-				// Transposition table store
-				TTEntry d;
-				d.depth = depth;
-				d.value = max;
-				if (alpha > max)
-					d.type = 2; // upper bound
-				else if (beta < max)
-					d.type = 1; // lower bound
-				else
-					d.type = 0; // exact value
-				d.bestMove = bestFoundMove;
-
-				transpositionTable[zobristHash] = d;
 				return max;
 			}
 
 		}
 
+		storeEntry(depth, alpha, beta, max, overAllBestMove, zobristHash);
+		return max;
+
+	}
+	void storeEntry(int depth, int alpha, int beta, int max, Move bestmove, ulong zobristHash)
+	{
 		entryCount++;
 
 		// Transposition table store
@@ -446,10 +422,8 @@ public class MyBot : IChessBot
 			newEntry.type = 1; // lower bound
 		else
 			newEntry.type = 0; // exact value
-		newEntry.bestMove = bestFoundMove;
+		newEntry.bestMove = bestmove;
 
 		transpositionTable[zobristHash] = newEntry;
-		return max;
-
 	}
 }

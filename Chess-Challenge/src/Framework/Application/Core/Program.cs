@@ -15,6 +15,9 @@ namespace ChessChallenge.Application
 
 		public static void Main(string[] args)
 		{
+            Console.WriteLine("args:");
+            foreach(string arg in args)
+                Console.WriteLine(arg);
 			if (args.Length == 1 && args[0].Contains("cutechess"))
 			{
 				string argstr = args[0].Substring(args[0].IndexOf("uci"));
@@ -33,6 +36,7 @@ namespace ChessChallenge.Application
 			}
 			if (args.Length > 1 && args[0] == "uci")
 			{
+				Console.WriteLine("Starting up in UCI mode...");
 				StartUCI(args);
 				return;
 			}

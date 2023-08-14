@@ -82,8 +82,8 @@ namespace ChessChallenge.Example
 				startime = timer.MillisecondsRemaining;
 
 				bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
-				Console.WriteLine($"bestmove at depth {d + 1} was {overAllBestMove} with eval at {bestEval}");
-				Console.WriteLine($"Time used for depth {d + 1}: {startime - timer.MillisecondsRemaining} miliseconds");
+				Console.WriteLine($"bestmove at depth {d } was {overAllBestMove} with eval at {bestEval}");
+				Console.WriteLine($"Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
 			}
 			Console.WriteLine("mybot node count " + counters[^1]);
