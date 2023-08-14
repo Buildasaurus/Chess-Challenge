@@ -112,8 +112,17 @@ namespace ChessChallenge.Application
             isPlaying = true;
             NotifyTurnToMove();
         }
-
-        void BotThinkerThread()
+		public static ChessChallenge.API.IChessBot? CreateBot(PlayerType type)
+		{
+			return type switch
+			{
+				PlayerType.MyBot => new MyBot(),
+				PlayerType.EvilBot => new EvilBot(),
+				// If you have other bot types, you can add them here as well
+				_ => null
+			};
+		}
+		void BotThinkerThread()
         {
             int threadID = gameID;
             //Console.WriteLine("Starting thread: " + threadID);
