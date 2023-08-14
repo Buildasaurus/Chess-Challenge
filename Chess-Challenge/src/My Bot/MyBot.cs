@@ -318,6 +318,8 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	int negamax(Board board, int depth, int ply, int alpha, int beta, int color, int numExtensions)
 	{
+		bool notRoot = ply > 0;
+
 		// Transposition table lookup
 		Move bestMove = Move.NullMove;
 		ulong zobristHash = board.ZobristKey;
@@ -340,13 +342,13 @@ public class MyBot : IChessBot
 			}
 		}
 
-		if (ply == 0) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+		if (!notRoot) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 		//return early statements.
 		if (board.IsInCheckmate())
 			return -999999;
 		counters[^1]++;
-		if (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate())
+		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
 		if (depth == 0)
 		{
@@ -357,12 +359,12 @@ public class MyBot : IChessBot
 		Move[] legalmoves = board.GetLegalMoves();
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
-		if (ply == 0 && overAllBestMove != Move.NullMove)
+		if (!notRoot && overAllBestMove != Move.NullMove)
 		{
 			MoveToFrontOfArray(ref legalmoves, overAllBestMove);
 		}
 		//move the best move from lookup to top.
-		else if (ply != 0 && bestMove != Move.NullMove)
+		else if (notRoot && bestMove != Move.NullMove)
 		{
 			MoveToFrontOfArray(ref legalmoves, bestMove);
 		}
@@ -374,7 +376,7 @@ public class MyBot : IChessBot
 		{
 			//Early stop at top level
 			if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
-			if (timeToStop && ply == 0)
+			if (timeToStop && !notRoot)
 			{
 				break;
 			}
@@ -395,7 +397,7 @@ public class MyBot : IChessBot
 			}
 			board.UndoMove(move);
 			alpha = Math.Max(alpha, max);
-			if (alpha >= beta && ply != 0) //alpha > beta shouldn't be possible at root, but anyways.
+			if (alpha >= beta && notRoot) //alpha > beta shouldn't be possible at root, but anyways.
 			{
 				storeEntry(depth, alpha, beta, max, bestFoundMove, zobristHash);
 
@@ -406,7 +408,6 @@ public class MyBot : IChessBot
 
 		storeEntry(depth, alpha, beta, max, overAllBestMove, zobristHash);
 		return max;
-
 	}
 	void storeEntry(int depth, int alpha, int beta, int max, Move bestmove, ulong zobristHash)
 	{
