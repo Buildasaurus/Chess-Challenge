@@ -328,8 +328,11 @@ public class MyBot : IChessBot
 			return 0;
 		if (depth == 0)
 		{
-			return color * evaluation(board);
+			// Call Quiescence function here
+			return Quiescence(board, depth, alpha, beta, color);
 		}
+
+
 		ulong zobristHash = board.ZobristKey;
 
 		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
@@ -409,6 +412,49 @@ public class MyBot : IChessBot
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
+	int Quiescence(Board board, sbyte depth, int alpha, int beta, int color)
+	{
+		int standingPat = color * evaluation(board);
+
+		if (standingPat >= beta)
+		{
+			return beta;
+		}
+
+		if (alpha < standingPat)
+		{
+			alpha = standingPat;
+		}
+
+		int oppositeColor = -1 * color;
+
+		Move[] moves = board.GetLegalMoves();
+		Array.Sort(moves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		int score;
+		for (int i = 0; i < moves.Length; i++)
+		{
+			if (!moves[i].IsCapture)
+			{
+				continue;
+			}
+
+			board.MakeMove(moves[i]);
+			score = -Quiescence(board, (sbyte)(depth - 1), -beta, -alpha, oppositeColor);
+			board.UndoMove(moves[i]);
+
+			if (score >= beta)
+			{
+				return beta;
+			}
+			if (score > alpha)
+			{
+				alpha = score;
+			}
+		}
+		return alpha;
+	}
+
+
 	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
 	{
 		entryCount++;
