@@ -408,7 +408,7 @@ public class MyBot : IChessBot
 
 		}
 
-		storeEntry(ref transposition, depth, alpha, beta, max, overAllBestMove, zobristHash);
+		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
 	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
