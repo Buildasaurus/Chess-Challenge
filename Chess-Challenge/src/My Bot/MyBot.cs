@@ -56,7 +56,7 @@ public class MyBot : IChessBot
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
 		timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.985f);
+        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.975f);
         timeToStop = false;
         return bestMove(board, board.IsWhiteToMove);
     }
@@ -352,7 +352,7 @@ public class MyBot : IChessBot
 			bestMove = transposition.move;
 		}
 
-		if (!notRoot) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 
 		// Generate legal moves and sort them

@@ -49,10 +49,10 @@ namespace ChessChallenge.Example
 		int endMiliseconds = 0;
 		public Move Think(Board board, Timer _timer)
 		{
-			Console.WriteLine("-----My bot thinking----");
+			Console.WriteLine("-----Evil bot thinking----");
 			//killerMoves.Clear();
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.975f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
@@ -81,6 +81,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine("info string Entry count " + entryCount);
 			Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
 			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
+
 
 
 			return overAllBestMove;
@@ -347,7 +348,7 @@ namespace ChessChallenge.Example
 				bestMove = transposition.move;
 			}
 
-			if (!notRoot) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 
 			// Generate legal moves and sort them
@@ -400,10 +401,8 @@ namespace ChessChallenge.Example
 
 					return max;
 				}
-
 			}
-
-			storeEntry(ref transposition, depth, alpha, beta, max, overAllBestMove, zobristHash);
+			storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 			return max;
 		}
 		void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
