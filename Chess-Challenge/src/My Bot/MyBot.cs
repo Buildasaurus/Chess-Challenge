@@ -405,7 +405,6 @@ public class MyBot : IChessBot
 
 				return max;
 			}
-
 		}
 
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
