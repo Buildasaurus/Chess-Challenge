@@ -18,22 +18,6 @@ namespace ChessChallenge.Application
             Console.WriteLine("args:");
             foreach(string arg in args)
                 Console.WriteLine(arg);
-			if (args.Length == 1 && args[0].Contains("cutechess"))
-			{
-				string argstr = args[0].Substring(args[0].IndexOf("uci"));
-				string[] ccArgs = argstr.Split(" ");
-				if (ccArgs.Length == 2 && ccArgs[0] == "uci")
-				{
-					Console.WriteLine("Starting up in UCI mode...");
-					StartUCI(ccArgs);
-					return;
-				}
-				else
-				{
-					Console.WriteLine("Improper CuteChess arg format; should be 'cutechess uci <botname>'");
-					return;
-				}
-			}
 			if (args.Length > 1 && args[0] == "uci")
 			{
 				Console.WriteLine("Starting up in UCI mode...");

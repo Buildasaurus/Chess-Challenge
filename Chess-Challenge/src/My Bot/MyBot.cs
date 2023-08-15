@@ -76,15 +76,15 @@ public class MyBot : IChessBot
 			startime = timer.MillisecondsRemaining;
 
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
-			Console.WriteLine($"bestmove at depth {d} was {overAllBestMove} with eval at {bestEval}");
-			Console.WriteLine($"Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
+			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
+			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
 		}
-		Console.WriteLine("-------node count------- " + counters[^1]);
-		Console.WriteLine("useful lookups:  " + lookups);
-		Console.WriteLine("Entry count " + entryCount);
-		Console.WriteLine($"Final best move was {overAllBestMove} with eval at {bestEval}");
-		Console.WriteLine($"Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
+		Console.WriteLine("info string -------node count------- " + counters[^1]);
+		Console.WriteLine("info string useful lookups:  " + lookups);
+		Console.WriteLine("info string Entry count " + entryCount);
+		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
+		Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
 
 
 
@@ -392,7 +392,7 @@ public class MyBot : IChessBot
 				if(ply == 0)
 				{
 					overAllBestMove = move;
-					Console.WriteLine($"new Overall Best move: {move}");
+					Console.WriteLine($"info string new Overall Best move: {move}");
 				}
 				bestFoundMove = move;
 				max = eval;
@@ -406,7 +406,6 @@ public class MyBot : IChessBot
 				return max;
 			}
 		}
-
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
