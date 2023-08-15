@@ -414,6 +414,7 @@ public class MyBot : IChessBot
 	}
 	int Quiescence(Board board, sbyte depth, int alpha, int beta, int color)
 	{
+
 		int standingPat = color * evaluation(board);
 
 		if (standingPat >= beta)
@@ -425,25 +426,58 @@ public class MyBot : IChessBot
 		{
 			alpha = standingPat;
 		}
+		ulong zobristHash = board.ZobristKey;
+
+		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+		// Transposition table lookup
+		Move bestMove = Move.NullMove;
+		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
+		{
+			lookups++;
+			if (transposition.flag == 2) // lower bound
+				alpha = Math.Max(alpha, transposition.evaluation);
+			else // upper bound
+				beta = Math.Min(beta, transposition.evaluation);
+
+			//If we have an "exact" score (a < score < beta) just use that
+			//if (transposition.flag == 1) return transposition.evaluation;
+			//If we have a lower bound better than beta, use that
+			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
+			//If we have an upper bound worse than alpha, use that
+			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
+			bestMove = transposition.move;
+		}
 
 		int oppositeColor = -1 * color;
 
-		Move[] moves = board.GetLegalMoves();
-		Array.Sort(moves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
-		int score;
-		for (int i = 0; i < moves.Length; i++)
+		Move[] legalmoves = board.GetLegalMoves(true);
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		int score = 0;
+
+		//move the best move from lookup to top.
+		if (bestMove != Move.NullMove)
 		{
-			if (!moves[i].IsCapture)
+			MoveToFrontOfArray(ref legalmoves, bestMove);
+		}
+		Move bestFoundMove = Move.NullMove;
+
+		//start searching
+		foreach (Move move in legalmoves)
+		{
+			if (!move.IsCapture)
 			{
 				continue;
 			}
 
-			board.MakeMove(moves[i]);
+			board.MakeMove(move);
 			score = -Quiescence(board, (sbyte)(depth - 1), -beta, -alpha, oppositeColor);
-			board.UndoMove(moves[i]);
+			board.UndoMove(move);
+			storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
 
 			if (score >= beta)
 			{
+				storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
+
 				return beta;
 			}
 			if (score > alpha)
@@ -451,6 +485,8 @@ public class MyBot : IChessBot
 				alpha = score;
 			}
 		}
+		storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
+
 		return alpha;
 	}
 
