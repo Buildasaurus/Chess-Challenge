@@ -70,7 +70,7 @@ public class MyBot : IChessBot
 		int color = playerToMove ? 1 : -1;
 		int bestEval = 0;
 		int thinkStart = timer.MillisecondsRemaining;
-		for (int d = 1; d <= 32; d++)
+		for (sbyte d = 1; d <= 32; d++)
         {
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
@@ -82,7 +82,6 @@ public class MyBot : IChessBot
 		}
 		Console.WriteLine("-------node count------- " + counters[^1]);
 		Console.WriteLine("useful lookups:  " + lookups);
-		Console.WriteLine("lookuptable count " + transpositionTable.Count);
 		Console.WriteLine("Entry count " + entryCount);
 		Console.WriteLine($"Final best move was {overAllBestMove} with eval at {bestEval}");
 		Console.WriteLine($"Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
@@ -287,22 +286,23 @@ public class MyBot : IChessBot
 			array[0] = move;
 		}
 	}
-	
+
 	// Define a structure to store transposition table entries
-	struct TTEntry
+	struct Transposition
 	{
-		public int value;
-		public int depth;
-		public int type; // 0 = exact, 1 = lower bound, 2 = upper bound
-		public Move bestMove;
-	}
+		public ulong zobristHash;
+		public Move move;
+		public int evaluation;
+		public sbyte depth;
+		public byte flag;
+	};
 	int lookups = 0;
 	int entryCount = 0;
 	int startime;
 
 
 	// Create a transposition table
-	Dictionary<ulong, TTEntry> transpositionTable = new Dictionary<ulong, TTEntry>(5000000);
+	Transposition[] transpositionTable = new Transposition[0x7FFFFF + 1];
 	// Define a data structure to store killer moves
 	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 	/// <summary>
@@ -316,33 +316,9 @@ public class MyBot : IChessBot
 	/// <param name="color"></param>
 	/// <param name="numExtensions"></param>
 	/// <returns></returns>
-	int negamax(Board board, int depth, int ply, int alpha, int beta, int color, int numExtensions)
+	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color, int numExtensions)
 	{
 		bool notRoot = ply > 0;
-
-		// Transposition table lookup
-		Move bestMove = Move.NullMove;
-		ulong zobristHash = board.ZobristKey;
-		if (transpositionTable.ContainsKey(zobristHash))
-		{
-			TTEntry entry = transpositionTable[zobristHash];
-			if (entry.depth >= depth)
-			{
-				lookups++;
-				bestMove = entry.bestMove;
-				//if (entry.type == 0) // exact value
-				//	return entry.value;
-				if (entry.type == 1) // lower bound
-					alpha = Math.Max(alpha, entry.value);
-				else // upper bound
-					beta = Math.Min(beta, entry.value);
-
-				//if (alpha >= beta)
-				//	return entry.value;
-			}
-		}
-
-		if (!notRoot) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 		//return early statements.
 		if (board.IsInCheckmate())
@@ -354,6 +330,30 @@ public class MyBot : IChessBot
 		{
 			return color * evaluation(board);
 		}
+		ulong zobristHash = board.ZobristKey;
+
+		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+		// Transposition table lookup
+		Move bestMove = Move.NullMove;
+		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
+		{
+			lookups++;
+			if (transposition.flag == 2) // lower bound
+				alpha = Math.Max(alpha, transposition.evaluation);
+			else // upper bound
+				beta = Math.Min(beta, transposition.evaluation);
+
+			//If we have an "exact" score (a < score < beta) just use that
+			//if (transposition.flag == 1) return transposition.evaluation;
+			//If we have a lower bound better than beta, use that
+			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
+			//If we have an upper bound worse than alpha, use that
+			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
+			bestMove = transposition.move;
+		}
+
+		if (!notRoot) Console.WriteLine($"Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+
 
 		// Generate legal moves and sort them
 		Move[] legalmoves = board.GetLegalMoves();
@@ -382,9 +382,9 @@ public class MyBot : IChessBot
 			}
 
 			board.MakeMove(move);
-			int extension = board.IsInCheck() && numExtensions < 10 ? 1 : 0;
+			//sbyte extension = board.IsInCheck() && numExtensions < 10 ? (sbyte)1 : (sbyte)0;
 
-			int eval = -negamax(board, depth - 1 + extension, ply + 1, -beta, -alpha, -color, numExtensions + extension);
+			int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
 
 			if (eval > max)
 			{
@@ -401,32 +401,31 @@ public class MyBot : IChessBot
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta && notRoot) //alpha > beta shouldn't be possible at root, but anyways.
 			{
-				storeEntry(depth, alpha, beta, max, bestFoundMove, zobristHash);
+				storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 
 				return max;
 			}
 
 		}
 
-		storeEntry(depth, alpha, beta, max, overAllBestMove, zobristHash);
+		storeEntry(ref transposition, depth, alpha, beta, max, overAllBestMove, zobristHash);
 		return max;
 	}
-	void storeEntry(int depth, int alpha, int beta, int max, Move bestmove, ulong zobristHash)
+	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
 	{
 		entryCount++;
 
 		// Transposition table store
-		TTEntry newEntry;
-		newEntry.depth = depth;
-		newEntry.value = max;
-		if (alpha > max)
-			newEntry.type = 2; // upper bound
-		else if (beta < max)
-			newEntry.type = 1; // lower bound
-		else
-			newEntry.type = 0; // exact value
-		newEntry.bestMove = bestmove;
-
-		transpositionTable[zobristHash] = newEntry;
+		transposition.evaluation = bestEvaluation;
+		transposition.zobristHash = zobristHash;
+		transposition.move = bestMove;
+		if (bestEvaluation < alpha)
+			transposition.flag = 3; //upper bound
+		else if (bestEvaluation >= beta)
+		{
+			transposition.flag = 2; //lower bound
+		}
+		else transposition.flag = 1; //"exact" score
+		transposition.depth = (sbyte)depth;
 	}
 }
