@@ -1,6 +1,4 @@
 ﻿using ChessChallenge.API;
-using System.Linq;
-using System.Numerics;
 using System.Collections.Generic;
 using System;
 
@@ -46,12 +44,12 @@ public class MyBot : IChessBot
 		return kingMatrix[y, x];
 	}
 	bool timeToStop = false;
-	Timer timer;
+	ChessChallenge.API.Timer timer;
 	/// <summary>
 	/// if under this miliseconds remaing, then should stop.
 	/// </summary>
 	int endMiliseconds = 0;
-	public Move Think(Board board, Timer _timer)
+	public Move Think(Board board, ChessChallenge.API.Timer _timer)
 	{
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
@@ -322,14 +320,14 @@ public class MyBot : IChessBot
 
 		//return early statements.
 		if (board.IsInCheckmate())
-			return -999999;
+			return -999999 + ply *1000;
 		counters[^1]++;
 		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
 		if (depth == 0)
 		{
 			// Call Quiescence function here
-			return Quiescence(board, depth, alpha, beta, color);
+			return Quiescence(board, alpha, beta, color);
 		}
 
 
@@ -412,7 +410,7 @@ public class MyBot : IChessBot
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
-	int Quiescence(Board board, sbyte depth, int alpha, int beta, int color)
+	int Quiescence(Board board, int alpha, int beta, int color)
 	{
 
 		int standingPat = color * evaluation(board);
@@ -426,7 +424,29 @@ public class MyBot : IChessBot
 		{
 			alpha = standingPat;
 		}
+		//**new code**
 		ulong zobristHash = board.ZobristKey;
+
+		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+		// Transposition table lookup
+		Move bestMove = Move.NullMove;
+		if (transposition.zobristHash == zobristHash)
+		{
+			lookups++;
+			if (transposition.flag == 2) // lower bound
+				alpha = Math.Max(alpha, transposition.evaluation);
+			else // upper bound
+				beta = Math.Min(beta, transposition.evaluation);
+
+			//If we have an "exact" score (a < score < beta) just use that
+			//if (transposition.flag == 1) return transposition.evaluation;
+			//If we have a lower bound better than beta, use that
+			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
+			//If we have an upper bound worse than alpha, use that
+			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
+			bestMove = transposition.move;
+		}
+		//**end**
 
 
 		int oppositeColor = -1 * color;
@@ -434,8 +454,11 @@ public class MyBot : IChessBot
 		Move[] legalmoves = board.GetLegalMoves(true);
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 		int score = 0;
-
-		Move bestFoundMove = Move.NullMove;
+		//move the best move from lookup to top.
+		if (bestMove != Move.NullMove)
+		{
+			MoveToFrontOfArray(ref legalmoves, bestMove);
+		}
 
 		//start searching
 		foreach (Move move in legalmoves)
@@ -446,7 +469,7 @@ public class MyBot : IChessBot
 			}
 
 			board.MakeMove(move);
-			score = -Quiescence(board, (sbyte)(depth - 1), -beta, -alpha, oppositeColor);
+			score = -Quiescence(board, -beta, -alpha, oppositeColor);
 			board.UndoMove(move);
 
 			if (score >= beta)
