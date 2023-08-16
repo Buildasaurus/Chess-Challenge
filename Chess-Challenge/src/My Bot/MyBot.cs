@@ -137,7 +137,7 @@ public class MyBot : IChessBot
 				switch (piece.PieceType)
 				{
 					case PieceType.Pawn:
-						eval += pawnMatrix[piece.Square.Rank, piece.Square.File];
+						eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
 						break;
 					case PieceType.Knight:
 						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
