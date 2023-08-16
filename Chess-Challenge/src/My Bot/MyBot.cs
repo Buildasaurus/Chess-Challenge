@@ -15,63 +15,63 @@ using System;
 public class MyBot : IChessBot
 {
 
-    List<int> counters = new List<int>();
-    int[,] knightMatrix = {
-            {-50, -40, -30, -30, -30, -30, -40, -50},
-            {-40, -20, 0, 0, 0, 0, -20, -40},
-            {-30, 0, 10, 15, 15, 10, 0, -30},
-            {-30, 5, 15, 20, 20, 15, 5,-30},
-            {-30, 0, 15, 20, 20, 15, 0,-30},
-            {-30, 5, 10, 15, 15, 10, 5, -30},
-            {-40, -20, 0, 5, 5, 0, -20, -40},
-            {-50, -40, -30, -30, -30, -30, -40, -50}};
+	List<int> counters = new List<int>();
+	int[,] knightMatrix = {
+			{-50, -40, -30, -30, -30, -30, -40, -50},
+			{-40, -20, 0, 0, 0, 0, -20, -40},
+			{-30, 0, 10, 15, 15, 10, 0, -30},
+			{-30, 5, 15, 20, 20, 15, 5,-30},
+			{-30, 0, 15, 20, 20, 15, 0,-30},
+			{-30, 5, 10, 15, 15, 10, 5, -30},
+			{-40, -20, 0, 5, 5, 0, -20, -40},
+			{-50, -40, -30, -30, -30, -30, -40, -50}};
 
-    int[,] bishopMatrix =  {
-            {-20,-10,-10,-10,-10,-10,-10,-20},
-            {-10,  0,  0,  0,  0,  0,  0,-10},
-            {-10,  0,  5, 10, 10,  5,  0,-10},
-            {-10,  5,  5, 10, 10,  5,  5,-10},
-            {-10,  0, 10, 10, 10, 10,  0,-10},
-            {-10, 10, 10, 10, 10, 10, 10,-10},
-            {-10,  5,  0,  0,  0,  0,  5,-10},
-            {-20,-10,-10,-10,-10,-10,-10,-20},
-        };
-    int[,] kingMatrix = {
-            {20, 30, 10, 0, 0, 10, 30, 20},
-            {20, 20, -5, -5, -5, -5, 20, 20}};
-    int getKingMatrix(int y, int x)
-    {
-        if (y > 1)
-            return -5;
-        return kingMatrix[y, x];
-    }
-    bool timeToStop = false;
-    Timer timer;
-    /// <summary>
-    /// if under this miliseconds remaing, then should stop.
-    /// </summary>
-    int endMiliseconds = 0;
-    public Move Think(Board board, Timer _timer)
-    {
+	int[,] bishopMatrix =  {
+			{-20,-10,-10,-10,-10,-10,-10,-20},
+			{-10,  0,  0,  0,  0,  0,  0,-10},
+			{-10,  0,  5, 10, 10,  5,  0,-10},
+			{-10,  5,  5, 10, 10,  5,  5,-10},
+			{-10,  0, 10, 10, 10, 10,  0,-10},
+			{-10, 10, 10, 10, 10, 10, 10,-10},
+			{-10,  5,  0,  0,  0,  0,  5,-10},
+			{-20,-10,-10,-10,-10,-10,-10,-20},
+		};
+	int[,] kingMatrix = {
+			{20, 30, 10, 0, 0, 10, 30, 20},
+			{20, 20, -5, -5, -5, -5, 20, 20}};
+	int getKingMatrix(int y, int x)
+	{
+		if (y > 1)
+			return -5;
+		return kingMatrix[y, x];
+	}
+	bool timeToStop = false;
+	Timer timer;
+	/// <summary>
+	/// if under this miliseconds remaing, then should stop.
+	/// </summary>
+	int endMiliseconds = 0;
+	public Move Think(Board board, Timer _timer)
+	{
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
 		timer = _timer;
-        endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining*0.975f);
-        timeToStop = false;
-        return bestMove(board, board.IsWhiteToMove);
-    }
-    int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
+		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.975f);
+		timeToStop = false;
+		return bestMove(board, board.IsWhiteToMove);
+	}
+	int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
 	Move overAllBestMove;
-    Move bestMove(Board board, bool playerToMove)
-    {
+	Move bestMove(Board board, bool playerToMove)
+	{
 		lookups = 0;
 		entryCount = 0;
-        counters.Add(0);
+		counters.Add(0);
 		int color = playerToMove ? 1 : -1;
 		int bestEval = 0;
 		int thinkStart = timer.MillisecondsRemaining;
 		for (sbyte d = 1; d <= 32; d++)
-        {
+		{
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
 
@@ -89,8 +89,8 @@ public class MyBot : IChessBot
 
 
 		return overAllBestMove;
-    }
-	
+	}
+
 
 
 	int MoveOrderingHeuristic(Move move, Board board)
@@ -108,13 +108,13 @@ public class MyBot : IChessBot
 		return score;
 	}
 	int evaluation(Board board)
-    {
-        int eval = 0;
-        eval += materialEval(board, true);
-        eval -= materialEval(board, false);
+	{
+		int eval = 0;
+		eval += materialEval(board, true);
+		eval -= materialEval(board, false);
 
-        // Initialize variables for pawn structure and king safety evaluation
-        /*ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
+		// Initialize variables for pawn structure and king safety evaluation
+		/*ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
 		ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
 		ulong whiteIsolatedPawns = ~((whitePawns << 1) | (whitePawns >> 1));
 		ulong blackIsolatedPawns = ~((blackPawns << 1) | (blackPawns >> 1));
@@ -166,9 +166,9 @@ public class MyBot : IChessBot
 		if ((diagonalMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & (RankMask(blackKingRank + 1) - 1)))
 			eval += 0.5f;
 		*/
-        return eval;
-    }
-    /*
+		return eval;
+	}
+	/*
 	ulong FileMask(int file)
 	{
 		return 0x0101010101010101UL << file;
@@ -189,35 +189,35 @@ public class MyBot : IChessBot
 		return mask;
 	}*/
 
-    int materialEval(Board board, bool color)
-    {
-        int eval = 0;
-        for (int i = 0; i < 6; i++)
-        {
-            PieceList pieces = board.GetPieceList((PieceType)(i+1), color);
-            eval += pieceValues[i] * pieces.Count;
-            foreach (Piece piece in pieces)
-            {
-                switch (piece.PieceType)
-                {
-                    case PieceType.Pawn:
-                        eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
-                        break;
-                    case PieceType.Knight:
-                        eval += knightMatrix[piece.Square.Rank, piece.Square.File];
-                        break;
-                    case PieceType.Bishop:
-                        eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
-                        break;
-                    case PieceType.King:
-                        if (board.GameMoveHistory.Length < 40)
-                            eval += getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
-                        break;
-                }
-            }
-        }
-        return eval;
-    }
+	int materialEval(Board board, bool color)
+	{
+		int eval = 0;
+		for (int i = 0; i < 6; i++)
+		{
+			PieceList pieces = board.GetPieceList((PieceType)(i + 1), color);
+			eval += pieceValues[i] * pieces.Count;
+			foreach (Piece piece in pieces)
+			{
+				switch (piece.PieceType)
+				{
+					case PieceType.Pawn:
+						eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+						break;
+					case PieceType.Knight:
+						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.Bishop:
+						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
+						break;
+					case PieceType.King:
+						if (board.GameMoveHistory.Length < 40)
+							eval += getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
+						break;
+				}
+			}
+		}
+		return eval;
+	}
 
 
 
@@ -392,7 +392,7 @@ public class MyBot : IChessBot
 			if (eval > max)
 			{
 				//if root level new best move is found, then save it to be played or for next iteration
-				if(ply == 0)
+				if (ply == 0)
 				{
 					overAllBestMove = move;
 					Console.WriteLine($"info string new Overall Best move: {move}");
@@ -428,25 +428,6 @@ public class MyBot : IChessBot
 		}
 		ulong zobristHash = board.ZobristKey;
 
-		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
-		// Transposition table lookup
-		Move bestMove = Move.NullMove;
-		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
-		{
-			lookups++;
-			if (transposition.flag == 2) // lower bound
-				alpha = Math.Max(alpha, transposition.evaluation);
-			else // upper bound
-				beta = Math.Min(beta, transposition.evaluation);
-
-			//If we have an "exact" score (a < score < beta) just use that
-			//if (transposition.flag == 1) return transposition.evaluation;
-			//If we have a lower bound better than beta, use that
-			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
-			//If we have an upper bound worse than alpha, use that
-			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
-			bestMove = transposition.move;
-		}
 
 		int oppositeColor = -1 * color;
 
@@ -454,11 +435,6 @@ public class MyBot : IChessBot
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
 		int score = 0;
 
-		//move the best move from lookup to top.
-		if (bestMove != Move.NullMove)
-		{
-			MoveToFrontOfArray(ref legalmoves, bestMove);
-		}
 		Move bestFoundMove = Move.NullMove;
 
 		//start searching
@@ -472,12 +448,9 @@ public class MyBot : IChessBot
 			board.MakeMove(move);
 			score = -Quiescence(board, (sbyte)(depth - 1), -beta, -alpha, oppositeColor);
 			board.UndoMove(move);
-			storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
 
 			if (score >= beta)
 			{
-				storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
-
 				return beta;
 			}
 			if (score > alpha)
@@ -485,8 +458,6 @@ public class MyBot : IChessBot
 				alpha = score;
 			}
 		}
-		storeEntry(ref transposition, depth, alpha, beta, score, bestFoundMove, zobristHash);
-
 		return alpha;
 	}
 

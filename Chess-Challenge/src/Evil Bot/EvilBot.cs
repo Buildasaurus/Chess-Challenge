@@ -324,8 +324,11 @@ namespace ChessChallenge.Example
 				return 0;
 			if (depth == 0)
 			{
-				return color * evaluation(board);
+				// Call Quiescence function here
+				return Quiescence(board, depth, alpha, beta, color);
 			}
+
+
 			ulong zobristHash = board.ZobristKey;
 
 			ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
@@ -405,6 +408,56 @@ namespace ChessChallenge.Example
 			storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 			return max;
 		}
+		int Quiescence(Board board, sbyte depth, int alpha, int beta, int color)
+		{
+
+			int standingPat = color * evaluation(board);
+
+			if (standingPat >= beta)
+			{
+				return beta;
+			}
+
+			if (alpha < standingPat)
+			{
+				alpha = standingPat;
+			}
+			ulong zobristHash = board.ZobristKey;
+
+
+			int oppositeColor = -1 * color;
+
+			Move[] legalmoves = board.GetLegalMoves(true);
+			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+			int score = 0;
+
+			Move bestFoundMove = Move.NullMove;
+
+			//start searching
+			foreach (Move move in legalmoves)
+			{
+				if (!move.IsCapture)
+				{
+					continue;
+				}
+
+				board.MakeMove(move);
+				score = -Quiescence(board, (sbyte)(depth - 1), -beta, -alpha, oppositeColor);
+				board.UndoMove(move);
+
+				if (score >= beta)
+				{
+					return beta;
+				}
+				if (score > alpha)
+				{
+					alpha = score;
+				}
+			}
+			return alpha;
+		}
+
+
 		void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
 		{
 			entryCount++;
