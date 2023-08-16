@@ -1,7 +1,7 @@
 ﻿using ChessChallenge.API;
 using System.Collections.Generic;
 using System;
-
+using System.Linq;
 
 /// <summary>
 /// 
@@ -43,6 +43,16 @@ public class MyBot : IChessBot
 			return -5;
 		return kingMatrix[y, x];
 	}
+	int[,] pawnMatrix = {
+		{0, 0, 0, 0, 0, 0, 0, 0},
+		{50, 50, 50, 50, 50, 50, 50, 50},
+		{10, 10, 20, 30, 30, 20, 10, 10},
+		{5, 5, 10, 25, 25, 10, 5, 5},
+		{0, 0, 0, 20, 20, 0, 0, 0},
+		{5,-5,-10,0,-10,-5,-5,-5},
+		{5,-10,-10,-20,-20,-10,-10,-5},
+		{0,-20,-20,-30,-30,-20,-20,-20}
+	};
 	bool timeToStop = false;
 	ChessChallenge.API.Timer timer;
 	/// <summary>
@@ -54,7 +64,7 @@ public class MyBot : IChessBot
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
 		timer = _timer;
-		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.975f);
+		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 		timeToStop = false;
 		return bestMove(board, board.IsWhiteToMove);
 	}
@@ -91,10 +101,10 @@ public class MyBot : IChessBot
 
 
 
-	int MoveOrderingHeuristic(Move move, Board board)
+	int MoveOrderingHeuristic(Move move, Board board, Move goodMove)
 	{
 		int score = 0;
-
+		if (move == goodMove) score = 100000000;
 		// Give higher scores to captures and promotions
 		if (move.IsCapture)
 		{
@@ -111,81 +121,9 @@ public class MyBot : IChessBot
 		eval += materialEval(board, true);
 		eval -= materialEval(board, false);
 
-		// Initialize variables for pawn structure and king safety evaluation
-		/*ulong whitePawns = board.GetPieceBitboard(PieceType.Pawn, true);
-		ulong blackPawns = board.GetPieceBitboard(PieceType.Pawn, false);
-		ulong whiteIsolatedPawns = ~((whitePawns << 1) | (whitePawns >> 1));
-		ulong blackIsolatedPawns = ~((blackPawns << 1) | (blackPawns >> 1));
-		ulong whitePieces = board.WhitePiecesBitboard;
-		ulong blackPieces = board.BlackPiecesBitboard;
-		Square whiteKingSquare = board.GetKingSquare(true);
-		Square blackKingSquare = board.GetKingSquare(false);
-
-		// Evaluate doubled pawns
-		for (int file = 0; file < 8; file++)
-		{
-			int whitePawnsOnFile = BitOperations.PopCount(whitePawns & FileMask(file));
-			int blackPawnsOnFile = BitOperations.PopCount(blackPawns & FileMask(file));
-			if (whitePawnsOnFile > 1)
-				eval -= whitePawnsOnFile - 1;
-			if (blackPawnsOnFile > 1)
-				eval += blackPawnsOnFile - 1;
-		}
-
-		// Evaluate isolated pawns
-		eval -= BitOperations.PopCount(whiteIsolatedPawns & whitePawns);
-		eval += BitOperations.PopCount(blackIsolatedPawns & blackPawns);
-
-		// Evaluate king safety
-		int whiteKingFile = whiteKingSquare.File;
-		int whiteKingRank = whiteKingSquare.Rank;
-
-		// Check for open files towards the king
-		ulong fileMask = FileMask(whiteKingFile);
-		if ((fileMask & ~(RankMask(whiteKingRank) - 1) & ~(whitePieces | blackPieces)) == (fileMask & ~(RankMask(whiteKingRank) - 1)))
-			eval -= 0.5f;
-
-		// Check for open diagonals towards the king
-		ulong diagonalMask = DiagonalMask(whiteKingSquare);
-		if ((diagonalMask & ~(RankMask(whiteKingRank) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & ~(RankMask(whiteKingRank) - 1)))
-			eval -= 0.5f;
-
-		// Evaluate king safety for black
-		int blackKingFile = blackKingSquare.File;
-		int blackKingRank = blackKingSquare.Rank;
-
-		// Check for open files towards the king
-		fileMask = FileMask(blackKingFile);
-		if ((fileMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (fileMask & (RankMask(blackKingRank + 1) - 1)))
-			eval += 0.5f;
-
-		// Check for open diagonals towards the king
-		diagonalMask = DiagonalMask(blackKingSquare);
-		if ((diagonalMask & (RankMask(blackKingRank + 1) - 1) & ~(whitePieces | blackPieces)) == (diagonalMask & (RankMask(blackKingRank + 1) - 1)))
-			eval += 0.5f;
-		*/
 		return eval;
 	}
-	/*
-	ulong FileMask(int file)
-	{
-		return 0x0101010101010101UL << file;
-	}
-	ulong RankMask(int rank)
-	{
-		return 0xffUL << (rank * 8);
-	}
-	ulong DiagonalMask(Square square)
-	{
-		int rank = square.Rank;
-		int file = square.File;
-		ulong mask = 0;
-		for (int i = 1; i < Math.Min(rank, file) + 1; i++)
-			mask |= 1UL << ((rank - i) * 8 + file - i);
-		for (int i = 1; i < Math.Min(7 - rank, file) + 1; i++)
-			mask |= 1UL << ((rank + i) * 8 + file - i);
-		return mask;
-	}*/
+
 
 	int materialEval(Board board, bool color)
 	{
@@ -199,7 +137,7 @@ public class MyBot : IChessBot
 				switch (piece.PieceType)
 				{
 					case PieceType.Pawn:
-						eval += 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
+						eval += pawnMatrix[piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.Knight:
 						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
@@ -218,60 +156,6 @@ public class MyBot : IChessBot
 	}
 
 
-
-
-	/*
-	int StaticExchangeEvaluation(Move move, Board board)
-	{
-		int score = 0;
-		int attackerValue = pieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
-		int victimValue = pieceValues[(int)board.GetPiece(move.TargetSquare).PieceType];
-
-		// Make the move on the board
-		board.MakeMove(move);
-
-		// Calculate the gain from capturing the victim
-		int gain = victimValue - attackerValue;
-
-		// Find the least valuable attacker of the opposite color
-		Move bestCapture = FindLeastValuableAttacker(move.TargetSquare, board);
-
-		// If there is a capture, recursively evaluate it
-		if (bestCapture != Move.NullMove)
-			gain -= StaticExchangeEvaluation(bestCapture, board);
-
-		// Undo the move on the board
-		board.UndoMove(move);
-
-		// The score is the maximum of 0 and the gain
-		score = Math.Max(0, gain);
-
-		return score;
-	}
-
-	Move FindLeastValuableAttacker(Square square, Board board)
-	{
-		Move bestCapture = Move.NullMove;
-		int bestValue = 9999999;
-
-		// Iterate over all pieces of the opposite color
-		foreach (Move move in board.GetLegalMoves(true))
-		{
-			// Check if the piece can capture the square
-			if (move.TargetSquare == square)
-			{
-				// Check if the piece is less valuable than the current best
-				int value = pieceValues[(int)board.GetPiece(square).PieceType];
-				if (value < bestValue)
-				{
-					// Update the best capture and value
-					bestCapture = move;
-					bestValue = value;
-				}
-			}
-		}
-		return bestCapture;
-	}*/
 	void MoveToFrontOfArray(ref Move[] array, Move move)
 	{
 		int index = Array.IndexOf(array, move);
@@ -320,8 +204,9 @@ public class MyBot : IChessBot
 
 		//return early statements.
 		if (board.IsInCheckmate())
-			return -999999 + ply *1000;
-		counters[^1]++;
+			return -999999 + ply * 1000;
+		counters[^1]
+		++;
 		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
 		if (depth == 0)
@@ -329,7 +214,6 @@ public class MyBot : IChessBot
 			// Call Quiescence function here
 			return Quiescence(board, alpha, beta, color);
 		}
-
 
 		ulong zobristHash = board.ZobristKey;
 
@@ -344,35 +228,22 @@ public class MyBot : IChessBot
 			else // upper bound
 				beta = Math.Min(beta, transposition.evaluation);
 
-			//If we have an "exact" score (a < score < beta) just use that
-			//if (transposition.flag == 1) return transposition.evaluation;
-			//If we have a lower bound better than beta, use that
-			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
-			//If we have an upper bound worse than alpha, use that
-			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
 			bestMove = transposition.move;
 		}
 
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
-
 		// Generate legal moves and sort them
 		Move[] legalmoves = board.GetLegalMoves();
-		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		Move goodMove = notRoot ? bestMove : overAllBestMove;
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
-		if (!notRoot && overAllBestMove != Move.NullMove)
-		{
-			MoveToFrontOfArray(ref legalmoves, overAllBestMove);
-		}
-		//move the best move from lookup to top.
-		else if (notRoot && bestMove != Move.NullMove)
-		{
-			MoveToFrontOfArray(ref legalmoves, bestMove);
-		}
+
 		Move bestFoundMove = Move.NullMove;
 
 		//start searching
 		int max = -100000000;
+		bool first = true;
 		foreach (Move move in legalmoves)
 		{
 			//Early stop at top level
@@ -383,9 +254,18 @@ public class MyBot : IChessBot
 			}
 
 			board.MakeMove(move);
-			//sbyte extension = board.IsInCheck() && numExtensions < 10 ? (sbyte)1 : (sbyte)0;
 
-			int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
+			int eval;
+			if (first)
+				eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
+			else
+			{
+				eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -alpha - 1, -alpha, -color, numExtensions);
+				if (eval > alpha && eval < beta)
+					eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
+			}
+
+			first = false;
 
 			if (eval > max)
 			{
@@ -410,6 +290,7 @@ public class MyBot : IChessBot
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
+
 	int Quiescence(Board board, int alpha, int beta, int color)
 	{
 
@@ -425,7 +306,7 @@ public class MyBot : IChessBot
 			alpha = standingPat;
 		}
 		//**new code**
-		ulong zobristHash = board.ZobristKey;
+		/*ulong zobristHash = board.ZobristKey;
 
 		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
 		// Transposition table lookup
@@ -447,28 +328,24 @@ public class MyBot : IChessBot
 			bestMove = transposition.move;
 		}
 		//**end**
-
+		*/
 
 		int oppositeColor = -1 * color;
 
-		Move[] legalmoves = board.GetLegalMoves(true);
-		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board).CompareTo(MoveOrderingHeuristic(a, board)));
+		Move[] legalmoves = board.GetLegalMoves();
+		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, Move.NullMove).CompareTo(MoveOrderingHeuristic(a, board, Move.NullMove)));
 		int score = 0;
-		//move the best move from lookup to top.
-		if (bestMove != Move.NullMove)
-		{
-			MoveToFrontOfArray(ref legalmoves, bestMove);
-		}
 
 		//start searching
 		foreach (Move move in legalmoves)
 		{
-			if (!move.IsCapture)
-			{
-				continue;
-			}
 
 			board.MakeMove(move);
+			if (!move.IsCapture && !board.IsInCheck())
+			{
+				board.UndoMove(move);
+				continue;
+			}
 			score = -Quiescence(board, -beta, -alpha, oppositeColor);
 			board.UndoMove(move);
 

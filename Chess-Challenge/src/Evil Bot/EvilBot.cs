@@ -52,7 +52,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine("-----Evil bot thinking----");
 			//killerMoves.Clear();
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.975f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
