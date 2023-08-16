@@ -178,10 +178,10 @@ public class MyBot : IChessBot
 						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.Queen:
-						eval += Queens[piece.Square.Rank, piece.Square.File];
+						eval += Queens[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.Rook:
-						eval += Rooks[piece.Square.Rank, piece.Square.File];
+						eval += Rooks[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
 						break;
 					case PieceType.King:
 						openingEval = getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
