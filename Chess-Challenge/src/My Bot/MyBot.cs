@@ -92,7 +92,7 @@ public class MyBot : IChessBot
 		timeToStop = false;
 		return bestMove(board, board.IsWhiteToMove);
 	}
-	int[] pieceValues = { 100, 300, 300, 500, 900, 99999 };
+	int[] pieceValues = { 100, 300, 320, 500, 900, 99999 };
 	Move overAllBestMove;
 	Move bestMove(Board board, bool playerToMove)
 	{
