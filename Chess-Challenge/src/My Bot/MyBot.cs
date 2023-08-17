@@ -60,10 +60,10 @@ public class MyBot : IChessBot
 		{-5,  0,  0,  0,  0,  0,  0, -5},
 		{-5,  0,  0,  0,  0,  0,  0, -5},
 		{-5,  0,  0,  0,  0,  0,  0, -5},
-		{-5,  0,  0,  0,  0,0 ,0 , -5},
-		{-5 ,0 ,0 ,0 ,0 ,0 ,0 , -5},
+		{-5,  0,  0,  0,  0,    0 ,     0 , -5},
+		{-5 ,   0 ,     0 ,     0 ,     0 ,     0 ,     0 , -5},
 		{5 ,10 ,10 ,10 ,10 ,10 ,10 ,5},
-		{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+		{0 ,    0 ,     0 ,     0 ,     0 ,     0 ,     0 ,     0}
 	};
 
 	int[,] Queens = {
@@ -88,7 +88,7 @@ public class MyBot : IChessBot
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
 		timer = _timer;
-		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
+		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.995f);
 		timeToStop = false;
 		return bestMove(board, board.IsWhiteToMove);
 	}
@@ -107,7 +107,7 @@ public class MyBot : IChessBot
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
 
-			bestEval = negamax(board, d, 0, -10000000, 10000000, color, 0);
+			bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
@@ -230,7 +230,7 @@ public class MyBot : IChessBot
 
 		//return early statements.
 		if (board.IsInCheckmate())
-			return -999999 + ply *1000;
+			return -999999 + ply * 1000;
 		counters[^1]++;
 		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
@@ -314,6 +314,7 @@ public class MyBot : IChessBot
 	}
 	int Quiescence(Board board, int alpha, int beta, int color)
 	{
+
 		int standingPat = color * evaluation(board);
 
 		if (standingPat >= beta)
