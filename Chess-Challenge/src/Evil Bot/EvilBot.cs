@@ -11,7 +11,6 @@ namespace ChessChallenge.Example
 
 	public class EvilBot : IChessBot
 	{
-
 		List<int> counters = new List<int>();
 
 		int[,] knightMatrix = {
@@ -87,7 +86,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine("-----My bot thinking----");
 			//killerMoves.Clear();
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.995f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
@@ -175,6 +174,12 @@ namespace ChessChallenge.Example
 							break;
 						case PieceType.Bishop:
 							eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
+							break;
+						case PieceType.Queen:
+							eval += Queens[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
+							break;
+						case PieceType.Rook:
+							eval += Rooks[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
 							break;
 						case PieceType.King:
 							openingEval = getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
