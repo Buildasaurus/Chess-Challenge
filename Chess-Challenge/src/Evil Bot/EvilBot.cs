@@ -86,7 +86,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine("-----My bot thinking----");
 			//killerMoves.Clear();
 			timer = _timer;
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.995f);
+			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
