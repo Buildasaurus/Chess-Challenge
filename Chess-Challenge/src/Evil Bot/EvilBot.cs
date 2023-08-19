@@ -324,7 +324,7 @@ namespace ChessChallenge.Example
 			{
 				alpha = standingPat;
 			}
-			//**new code**
+			//**new code** For some reason seemed to worsen QSearch. So i'ts outcommented.
 			/*ulong zobristHash = board.ZobristKey;
 
 			ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];

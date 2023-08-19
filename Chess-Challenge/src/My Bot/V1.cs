@@ -1,18 +1,16 @@
 ﻿using ChessChallenge.API;
+using System.Linq;
+using System.Numerics;
 using System.Collections.Generic;
 using System;
-using System.Linq;
+
 
 /// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
+/// V1 has PVT (piece value tables), time manegement, negamax, TT, QSearch, move ordering, iterative deepening, a/b pruning, tapered evaluation
 /// </summary>
-public class MyBot : IChessBot
-{
 
+public class V1 : IChessBot
+{
 	List<int> counters = new List<int>();
 
 	int[,] knightMatrix = {
@@ -37,8 +35,8 @@ public class MyBot : IChessBot
 	};
 
 	int[,] kingMatrix = {
-			{20, 30, 10, 0, 0, 10, 30, 20},
-			{20, 20, -5, -5, -5, -5, 20, 20}};
+		{20, 30, 10, 0, 0, 10, 30, 20},
+		{20, 20, -5, -5, -5, -5, 20, 20}};
 	int getKingMatrix(int y, int x)
 	{
 		if (y > 1)
@@ -67,15 +65,15 @@ public class MyBot : IChessBot
 	};
 
 	int[,] Queens = {
-		{-20,-10,-10,-5,-5,-10,-10,-20},
-		{-10,  0,  5,  0,  0,  0,  0,-10},
-		{-10,  5,  5,  5,  5,  5,  0,-10},
-		{0,  0,  5,  5,  5,  5,  0, -5,},
-		{-5,  0,  5,  5,  5,  5,  0, -5,},
-		{-10,  0,  5,  5,  5,  5,  0,-10,},
-		{-10,  0,  0,  0,  0,  0,  0,-10,},
-		{-20,-10,-10,-5,-5,-10,-10,-20}
-	};
+	{-20,-10,-10,-5,-5,-10,-10,-20},
+	{-10,  0,  5,  0,  0,  0,  0,-10},
+	{-10,  5,  5,  5,  5,  5,  0,-10},
+	{0,  0,  5,  5,  5,  5,  0, -5,},
+	{-5,  0,  5,  5,  5,  5,  0, -5,},
+	{-10,  0,  5,  5,  5,  5,  0,-10,},
+	{-10,  0,  0,  0,  0,  0,  0,-10,},
+	{-20,-10,-10,-5,-5,-10,-10,-20}
+};
 
 	bool timeToStop = false;
 	ChessChallenge.API.Timer timer;
@@ -107,7 +105,7 @@ public class MyBot : IChessBot
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
 
-			bestEval = -negamax(board, d, 0, -10000000, 10000000, color);
+			bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
@@ -210,7 +208,7 @@ public class MyBot : IChessBot
 
 
 	// Create a transposition table
-	Transposition[] transpositionTable = new Transposition[0x800000];
+	Transposition[] transpositionTable = new Transposition[0x7FFFFF + 1];
 	// Define a data structure to store killer moves
 	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 	/// <summary>
@@ -224,7 +222,7 @@ public class MyBot : IChessBot
 	/// <param name="color"></param>
 	/// <param name="numExtensions"></param>
 	/// <returns></returns>
-	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
+	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color, int numExtensions)
 	{
 		bool notRoot = ply > 0;
 
@@ -234,27 +232,17 @@ public class MyBot : IChessBot
 		counters[^1]++;
 		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
-		if (depth <= 0)
+		if (depth == 0)
 		{
 			// Call Quiescence function here
 			return Quiescence(board, alpha, beta, color);
 		}
 
-		// Null move pruning - is perhaps best with more time on the clock?
-		const int R = 3;
-		if (!board.IsInCheck())
-		{
-			board.TrySkipTurn();
-			int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -beta + 1, -color);
-			board.UndoSkipTurn();
-			if (score >= beta)
-				return beta;
-		}
 
 		ulong zobristHash = board.ZobristKey;
-		// Transposition table lookup
 
 		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+		// Transposition table lookup
 		Move bestMove = Move.NullMove;
 		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
 		{
@@ -297,7 +285,7 @@ public class MyBot : IChessBot
 			board.MakeMove(move);
 			//sbyte extension = board.IsInCheck() && numExtensions < 10 ? (sbyte)1 : (sbyte)0;
 
-			int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
+			int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
 
 			if (eval > max)
 			{
@@ -322,7 +310,6 @@ public class MyBot : IChessBot
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
-
 	int Quiescence(Board board, int alpha, int beta, int color)
 	{
 
