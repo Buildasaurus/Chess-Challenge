@@ -11,7 +11,6 @@ namespace ChessChallenge.Example
 
 	public class EvilBot : IChessBot
 	{
-
 		List<int> counters = new List<int>();
 
 		int[,] knightMatrix = {
@@ -87,6 +86,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine("-----My bot thinking----");
 			//killerMoves.Clear();
 			timer = _timer;
+
 			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
@@ -261,10 +261,9 @@ namespace ChessChallenge.Example
 				//If we have an "exact" score (a < score < beta) just use that
 				//If we have a lower bound better than beta, use that
 				//If we have an upper bound worse than alpha, use that
-
-				/*if ((transposition.flag == 1) || 
-					(transposition.flag == 2 && transposition.evaluation >= beta) || 
-					(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;*/
+				if ((transposition.flag == 1) ||
+					(transposition.flag == 2 && transposition.evaluation >= beta) ||
+					(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
 				bestMove = transposition.move;
 			}
 
@@ -362,7 +361,6 @@ namespace ChessChallenge.Example
 			Move[] legalmoves = board.GetLegalMoves();
 			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, Move.NullMove).CompareTo(MoveOrderingHeuristic(a, board, Move.NullMove)));
 			int score = 0;
-
 			//start searching
 			foreach (Move move in legalmoves)
 			{
@@ -397,13 +395,14 @@ namespace ChessChallenge.Example
 			transposition.evaluation = bestEvaluation;
 			transposition.zobristHash = zobristHash;
 			transposition.move = bestMove;
-			if (bestEvaluation < alpha)
-				transposition.flag = 3; //upper bound
+			if (bestEvaluation > alpha)
+				transposition.flag = 1; //"exact" score
 			else if (bestEvaluation >= beta)
 			{
 				transposition.flag = 2; //lower bound
 			}
-			else transposition.flag = 1; //"exact" score
+			else
+				transposition.flag = 3; //upper bound
 			transposition.depth = (sbyte)depth;
 		}
 	}
