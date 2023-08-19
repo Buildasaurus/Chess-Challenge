@@ -3,13 +3,8 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
-/// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
-/// </summary>
+/// V3 has V2 but also Check extensions and no check in NMP.
+
 public class V3 : IChessBot
 {
 
