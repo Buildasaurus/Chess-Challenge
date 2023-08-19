@@ -227,7 +227,7 @@ public class V3 : IChessBot
 		bool isPV = beta - alpha > 1;
 		//return early statements.
 		if (board.IsInCheckmate())
-			return ply-999999;
+			return ply - 999999;
 		counters[^1]++;
 		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
@@ -263,8 +263,8 @@ public class V3 : IChessBot
 			//If we have an "exact" score (a < score < beta) just use that
 			//If we have a lower bound better than beta, use that
 			//If we have an upper bound worse than alpha, use that
-			if ((transposition.flag == 1) || 
-				(transposition.flag == 2 && transposition.evaluation >= beta) || 
+			if ((transposition.flag == 1) ||
+				(transposition.flag == 2 && transposition.evaluation >= beta) ||
 				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
 			bestMove = transposition.move;
 		}
@@ -321,7 +321,7 @@ public class V3 : IChessBot
 	int Quiescence(Board board, int alpha, int beta, int color)
 	{
 
-		int standingPat = board.IsInCheck() ? -999999 : color * evaluation(board);
+		int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
 
 		if (standingPat >= beta)
 		{
