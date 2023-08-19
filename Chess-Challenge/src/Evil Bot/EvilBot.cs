@@ -225,23 +225,28 @@ namespace ChessChallenge.Example
 		/// <returns></returns>
 		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 		{
+
 			bool notRoot = ply > 0;
 			bool isPV = beta - alpha > 1;
 			//return early statements.
 			if (board.IsInCheckmate())
-				return -999999 + ply * 1000;
+				return ply - 999999;
 			counters[^1]++;
 			if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 				return 0;
+			if (board.IsInCheck())
+				depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
+
 			if (depth <= 0)
 			{
-				// Call Quiescence function here
+				if (board.IsInCheck()) Console.WriteLine("HEY");
+				// Call Quiescence function at final depth
 				return Quiescence(board, alpha, beta, color);
 			}
 
 			// Null move pruning - is perhaps best with more time on the clock?
-			const int R = 3;
-			if (!isPV && !board.IsInCheck())
+			const int R = 2;
+			if (!isPV && !board.IsInCheck() && depth > R)
 			{
 				board.TrySkipTurn();
 				int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -alpha, -color);
@@ -289,7 +294,6 @@ namespace ChessChallenge.Example
 				}
 
 				board.MakeMove(move);
-				//sbyte extension = board.IsInCheck() && numExtensions < 10 ? (sbyte)1 : (sbyte)0;
 
 				int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 
@@ -306,7 +310,7 @@ namespace ChessChallenge.Example
 				}
 				board.UndoMove(move);
 				alpha = Math.Max(alpha, max);
-				if (alpha >= beta && notRoot) //alpha > beta shouldn't be possible at root, but anyways.
+				if (alpha >= beta)
 				{
 					storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 
@@ -320,7 +324,7 @@ namespace ChessChallenge.Example
 		int Quiescence(Board board, int alpha, int beta, int color)
 		{
 
-			int standingPat = color * evaluation(board);
+			int standingPat = board.IsInCheck() ? -999999 : color * evaluation(board);
 
 			if (standingPat >= beta)
 			{
@@ -358,19 +362,13 @@ namespace ChessChallenge.Example
 
 			int oppositeColor = -1 * color;
 
-			Move[] legalmoves = board.GetLegalMoves();
+			Move[] legalmoves = board.GetLegalMoves(true);
 			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, Move.NullMove).CompareTo(MoveOrderingHeuristic(a, board, Move.NullMove)));
 			int score = 0;
 			//start searching
 			foreach (Move move in legalmoves)
 			{
-
 				board.MakeMove(move);
-				if (!move.IsCapture && !board.IsInCheck())
-				{
-					board.UndoMove(move);
-					continue;
-				}
 				score = -Quiescence(board, -beta, -alpha, oppositeColor);
 				board.UndoMove(move);
 
