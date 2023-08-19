@@ -11,6 +11,7 @@ namespace ChessChallenge.Example
 
 	public class EvilBot : IChessBot
 	{
+
 		List<int> counters = new List<int>();
 
 		int[,] knightMatrix = {
@@ -105,7 +106,7 @@ namespace ChessChallenge.Example
 				if (timeToStop) break;
 				startime = timer.MillisecondsRemaining;
 
-				bestEval = -negamax(board, d, 0, -10000000, 10000000, color, 0);
+				bestEval = -negamax(board, d, 0, -10000000, 10000000, color);
 				Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
 				Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
 
@@ -208,7 +209,7 @@ namespace ChessChallenge.Example
 
 
 		// Create a transposition table
-		Transposition[] transpositionTable = new Transposition[0x7FFFFF + 1];
+		Transposition[] transpositionTable = new Transposition[0x800000];
 		// Define a data structure to store killer moves
 		//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 		/// <summary>
@@ -222,42 +223,48 @@ namespace ChessChallenge.Example
 		/// <param name="color"></param>
 		/// <param name="numExtensions"></param>
 		/// <returns></returns>
-		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color, int numExtensions)
+		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 		{
 			bool notRoot = ply > 0;
-
+			bool isPV = beta - alpha > 1;
 			//return early statements.
 			if (board.IsInCheckmate())
 				return -999999 + ply * 1000;
 			counters[^1]++;
 			if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 				return 0;
-			if (depth == 0)
+			if (depth <= 0)
 			{
 				// Call Quiescence function here
 				return Quiescence(board, alpha, beta, color);
 			}
 
+			// Null move pruning - is perhaps best with more time on the clock?
+			const int R = 3;
+			if (!isPV && !board.IsInCheck())
+			{
+				board.TrySkipTurn();
+				int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -alpha, -color);
+				board.UndoSkipTurn();
+				if (score >= beta)
+					return beta;
+			}
 
 			ulong zobristHash = board.ZobristKey;
+			// Transposition table lookup
 
 			ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
-			// Transposition table lookup
 			Move bestMove = Move.NullMove;
 			if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
 			{
 				lookups++;
-				if (transposition.flag == 2) // lower bound
-					alpha = Math.Max(alpha, transposition.evaluation);
-				else // upper bound
-					beta = Math.Min(beta, transposition.evaluation);
-
 				//If we have an "exact" score (a < score < beta) just use that
-				//if (transposition.flag == 1) return transposition.evaluation;
 				//If we have a lower bound better than beta, use that
-				//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
 				//If we have an upper bound worse than alpha, use that
-				//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
+
+				/*if ((transposition.flag == 1) || 
+					(transposition.flag == 2 && transposition.evaluation >= beta) || 
+					(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;*/
 				bestMove = transposition.move;
 			}
 
@@ -285,7 +292,7 @@ namespace ChessChallenge.Example
 				board.MakeMove(move);
 				//sbyte extension = board.IsInCheck() && numExtensions < 10 ? (sbyte)1 : (sbyte)0;
 
-				int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color, numExtensions);
+				int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 
 				if (eval > max)
 				{
@@ -310,6 +317,7 @@ namespace ChessChallenge.Example
 			storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 			return max;
 		}
+
 		int Quiescence(Board board, int alpha, int beta, int color)
 		{
 

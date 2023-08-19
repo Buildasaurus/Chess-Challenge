@@ -262,10 +262,9 @@ public class MyBot : IChessBot
 			//If we have an "exact" score (a < score < beta) just use that
 			//If we have a lower bound better than beta, use that
 			//If we have an upper bound worse than alpha, use that
-
-			/*if ((transposition.flag == 1) || 
+			if ((transposition.flag == 1) || 
 				(transposition.flag == 2 && transposition.evaluation >= beta) || 
-				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;*/
+				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
 			bestMove = transposition.move;
 		}
 
