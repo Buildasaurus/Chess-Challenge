@@ -227,7 +227,7 @@ public class MyBot : IChessBot
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
 		bool notRoot = ply > 0;
-
+		bool isPV = beta - alpha > 1;
 		//return early statements.
 		if (board.IsInCheckmate())
 			return -999999 + ply * 1000;
@@ -242,10 +242,10 @@ public class MyBot : IChessBot
 
 		// Null move pruning - is perhaps best with more time on the clock?
 		const int R = 3;
-		if (!board.IsInCheck())
+		if (!isPV && !board.IsInCheck())
 		{
 			board.TrySkipTurn();
-			int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -beta + 1, -color);
+			int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -alpha, -color);
 			board.UndoSkipTurn();
 			if (score >= beta)
 				return beta;
@@ -259,17 +259,13 @@ public class MyBot : IChessBot
 		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
 		{
 			lookups++;
-			if (transposition.flag == 2) // lower bound
-				alpha = Math.Max(alpha, transposition.evaluation);
-			else // upper bound
-				beta = Math.Min(beta, transposition.evaluation);
-
 			//If we have an "exact" score (a < score < beta) just use that
-			//if (transposition.flag == 1) return transposition.evaluation;
 			//If we have a lower bound better than beta, use that
-			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
 			//If we have an upper bound worse than alpha, use that
-			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
+
+			/*if ((transposition.flag == 1) || 
+				(transposition.flag == 2 && transposition.evaluation >= beta) || 
+				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;*/
 			bestMove = transposition.move;
 		}
 
@@ -402,13 +398,14 @@ public class MyBot : IChessBot
 		transposition.evaluation = bestEvaluation;
 		transposition.zobristHash = zobristHash;
 		transposition.move = bestMove;
-		if (bestEvaluation < alpha)
-			transposition.flag = 3; //upper bound
+		if (bestEvaluation > alpha)
+			transposition.flag = 1; //"exact" score
 		else if (bestEvaluation >= beta)
 		{
 			transposition.flag = 2; //lower bound
 		}
-		else transposition.flag = 1; //"exact" score
+		else
+			transposition.flag = 3; //upper bound
 		transposition.depth = (sbyte)depth;
 	}
 }
