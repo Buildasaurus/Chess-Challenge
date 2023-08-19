@@ -326,7 +326,7 @@ public class MyBot : IChessBot
 	int Quiescence(Board board, int alpha, int beta, int color)
 	{
 
-		int standingPat = board.IsInCheck() ? -999999 : color * evaluation(board);
+		int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
 
 		if (standingPat >= beta)
 		{
