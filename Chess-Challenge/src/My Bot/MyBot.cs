@@ -302,9 +302,18 @@ public class MyBot : IChessBot
 			// LMR: reduce the depth of the search for moves beyond a certain move count threshold
 			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 			//reduction -= isPV && reduction > 0 ? 1 : 0;
-			int eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
 
-			// Research with full depth if the move fails high - If it was better than allowed so opponnent wont play this branch.
+			int eval;
+			if (moveCount == 0)
+				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+			else
+			{
+				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
+				if (eval > alpha)
+					eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
+			}
+
+			// Research with full depth if the move fails high - If it was better than allowed so opponent won't play this branch.
 			if (reduction > 0 && eval >= beta)
 				eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 
@@ -326,6 +335,7 @@ public class MyBot : IChessBot
 				break;
 			}
 		}
+
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
