@@ -3,14 +3,11 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
+
 /// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
+/// Now also has LMR
 /// </summary>
-public class MyBot : IChessBot
+public class V4 : IChessBot
 {
 
 	List<int> counters = new List<int>();
@@ -185,7 +182,7 @@ public class MyBot : IChessBot
 						break;
 					case PieceType.King:
 						openingEval = getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
-						endgameEval = knightMatrix[piece.Square.Rank, piece.Square.File];
+						endgameEval = bishopMatrix[piece.Square.Rank, piece.Square.File];
 						eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900;
 						break;
 				}
@@ -233,7 +230,7 @@ public class MyBot : IChessBot
 		if (board.IsInCheckmate())
 			return ply-999999;
 		counters[^1]++;
-		if (notRoot && (board.IsDraw()))
+		if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 			return 0;
 		if (isInCheck)
 			depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);

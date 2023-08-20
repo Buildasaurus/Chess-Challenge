@@ -118,7 +118,6 @@ namespace ChessChallenge.Example
 			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
 
 
-
 			return overAllBestMove;
 		}
 
@@ -225,7 +224,7 @@ namespace ChessChallenge.Example
 		/// <returns></returns>
 		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 		{
-
+			bool isInCheck = board.IsInCheck();
 			bool notRoot = ply > 0;
 			bool isPV = beta - alpha > 1;
 			//return early statements.
@@ -234,19 +233,19 @@ namespace ChessChallenge.Example
 			counters[^1]++;
 			if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
 				return 0;
-			if (board.IsInCheck())
+			if (isInCheck)
 				depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
 
 			if (depth <= 0)
 			{
-				if (board.IsInCheck()) Console.WriteLine("HEY");
+				if (isInCheck) Console.WriteLine("HEY");
 				// Call Quiescence function at final depth
 				return Quiescence(board, alpha, beta, color);
 			}
 
 			// Null move pruning - is perhaps best with more time on the clock?
 			const int R = 2;
-			if (!isPV && !board.IsInCheck() && depth > R)
+			if (!isPV && !isInCheck && depth > R)
 			{
 				board.TrySkipTurn();
 				int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -alpha, -color);
@@ -278,14 +277,17 @@ namespace ChessChallenge.Example
 			Move[] legalmoves = board.GetLegalMoves();
 			Move goodMove = notRoot ? bestMove : overAllBestMove;
 			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
-			// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 
+			// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 			Move bestFoundMove = Move.NullMove;
 
 			//start searching
 			int max = -100000000;
+			int moveCount = 0; // Add a move counter
 			foreach (Move move in legalmoves)
 			{
+				moveCount++; // Increment the move counter
+
 				//Early stop at top level
 				if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
 				if (timeToStop && !notRoot)
@@ -295,7 +297,14 @@ namespace ChessChallenge.Example
 
 				board.MakeMove(move);
 
-				int eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
+				// LMR: reduce the depth of the search for moves beyond a certain move count threshold
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+				//reduction -= isPV && reduction > 0 ? 1 : 0;
+				int eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+
+				// Research with full depth if the move fails high - If it was better than allowed so opponnent wont play this branch.
+				if (reduction > 0 && eval >= beta)
+					eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 
 				if (eval > max)
 				{
@@ -324,7 +333,7 @@ namespace ChessChallenge.Example
 		int Quiescence(Board board, int alpha, int beta, int color)
 		{
 
-			int standingPat = board.IsInCheck() ? -999999 : color * evaluation(board);
+			int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
 
 			if (standingPat >= beta)
 			{
