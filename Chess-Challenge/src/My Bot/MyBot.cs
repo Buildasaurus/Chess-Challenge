@@ -226,6 +226,7 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
+		int startingAlpha = alpha;
 		bool isInCheck = board.IsInCheck();
 		bool notRoot = ply > 0;
 		bool isPV = beta - alpha > 1;
@@ -323,9 +324,7 @@ public class MyBot : IChessBot
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta)
 			{
-				storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
-
-				return max;
+				break;
 			}
 		}
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
@@ -405,13 +404,21 @@ public class MyBot : IChessBot
 		transposition.zobristHash = zobristHash;
 		transposition.move = bestMove;
 		if (bestEvaluation > alpha)
-			transposition.flag = 1; //"exact" score
+		{
+			Console.WriteLine("exact");
+			transposition.flag = 1;
+		}//"exact" score
 		else if (bestEvaluation >= beta)
 		{
+			Console.WriteLine("lower");
 			transposition.flag = 2; //lower bound
 		}
 		else
+		{
 			transposition.flag = 3; //upper bound
+			Console.WriteLine("upper");
+
+		}
 		transposition.depth = (sbyte)depth;
 	}
 }

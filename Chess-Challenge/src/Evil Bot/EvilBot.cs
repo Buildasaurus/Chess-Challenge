@@ -11,6 +11,7 @@ namespace ChessChallenge.Example
 
 	public class EvilBot : IChessBot
 	{
+
 		List<int> counters = new List<int>();
 
 		int[,] knightMatrix = {
@@ -183,7 +184,7 @@ namespace ChessChallenge.Example
 							break;
 						case PieceType.King:
 							openingEval = getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
-							endgameEval = bishopMatrix[piece.Square.Rank, piece.Square.File];
+							endgameEval = knightMatrix[piece.Square.Rank, piece.Square.File];
 							eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900;
 							break;
 					}
@@ -231,7 +232,7 @@ namespace ChessChallenge.Example
 			if (board.IsInCheckmate())
 				return ply - 999999;
 			counters[^1]++;
-			if (notRoot && (board.IsRepeatedPosition() || board.IsDraw() || board.IsInStalemate()))
+			if (notRoot && (board.IsDraw()))
 				return 0;
 			if (isInCheck)
 				depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
