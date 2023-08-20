@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 
 /// <summary>
-/// now also has PVS, and less ReSearches
+/// now also has PVS, History, a bugfix, and less ReSearches
 /// </summary>
 public class V5 : IChessBot
 {
@@ -133,6 +133,8 @@ public class V5 : IChessBot
 		}
 		if (move.IsPromotion)
 			score += 900;
+		//If this move has caused lots of cutoffs, let's put it higher.
+		score += historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index];
 		return score;
 	}
 	int evaluation(Board board)
@@ -227,7 +229,7 @@ public class V5 : IChessBot
 		bool isPV = beta - alpha > 1;
 		//return early statements.
 		if (board.IsInCheckmate())
-			return ply-999999;
+			return ply - 999999;
 		counters[^1]++;
 		if (notRoot && (board.IsDraw()))
 			return 0;
@@ -263,8 +265,8 @@ public class V5 : IChessBot
 			//If we have an "exact" score (a < score < beta) just use that
 			//If we have a lower bound better than beta, use that
 			//If we have an upper bound worse than alpha, use that
-			if ((transposition.flag == 1) || 
-				(transposition.flag == 2 && transposition.evaluation >= beta) || 
+			if ((transposition.flag == 1) ||
+				(transposition.flag == 2 && transposition.evaluation >= beta) ||
 				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
 			bestMove = transposition.move;
 		}
@@ -300,7 +302,7 @@ public class V5 : IChessBot
 			//reduction = isPV && reduction > 0 ? 1 : 0;
 
 			int eval;
-			if (moveCount == 0)
+			if (moveCount == 1)
 				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
 			else
 			{
@@ -324,6 +326,8 @@ public class V5 : IChessBot
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta)
 			{
+				//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
+				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 				break;
 			}
 		}
