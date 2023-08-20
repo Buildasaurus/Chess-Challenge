@@ -137,6 +137,8 @@ public class MyBot : IChessBot
 		}
 		if (move.IsPromotion)
 			score += 900;
+		//If this move has caused lots of cutoffs, let's put it higher.
+		score += historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index];
 		return score;
 	}
 	int evaluation(Board board)
@@ -304,7 +306,7 @@ public class MyBot : IChessBot
 			//reduction = isPV && reduction > 0 ? 1 : 0;
 
 			int eval;
-			if (moveCount == 0)
+			if (moveCount == 1)
 				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
 			else
 			{
@@ -328,6 +330,8 @@ public class MyBot : IChessBot
 			alpha = Math.Max(alpha, max);
 			if (alpha >= beta)
 			{
+				//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
+				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 				break;
 			}
 		}
