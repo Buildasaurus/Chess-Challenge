@@ -306,7 +306,7 @@ public class MyBot : IChessBot
 			//reduction = isPV && reduction > 0 ? 1 : 0;
 
 			int eval;
-			if (moveCount == 0)
+			if (moveCount == 1)
 				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
 			else
 			{
