@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 /// <summary>
 /// 
@@ -88,7 +89,7 @@ public class MyBot : IChessBot
 		Console.WriteLine("-----My bot thinking----");
 		//killerMoves.Clear();
 		timer = _timer;
-
+		historyTable = new int[2, 7, 64];
 		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
 		timeToStop = false;
 		return bestMove(board, board.IsWhiteToMove);
@@ -193,8 +194,8 @@ public class MyBot : IChessBot
 		}
 		return eval;
 	}
-
-
+	// History table definition
+	int[,,] historyTable;
 	// Define a structure to store transposition table entries
 	struct Transposition
 	{
@@ -300,8 +301,8 @@ public class MyBot : IChessBot
 			board.MakeMove(move);
 
 			// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
-			reduction = isPV && reduction > 0 ? 1 : 0;
+			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+			//reduction = isPV && reduction > 0 ? 1 : 0;
 
 			int eval;
 			if (moveCount == 0)
@@ -309,13 +310,9 @@ public class MyBot : IChessBot
 			else
 			{
 				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
-				if (eval > alpha)
+				if (eval > alpha || (reduction > 0 && beta > eval))
 					eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 			}
-
-			// Research with full depth if the move fails high - If it was better than allowed so opponent won't play this branch.
-			if (reduction > 0 && eval >= beta)
-				eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 
 			if (eval > max)
 			{
