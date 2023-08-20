@@ -300,8 +300,8 @@ public class MyBot : IChessBot
 			board.MakeMove(move);
 
 			// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
-			//reduction -= isPV && reduction > 0 ? 1 : 0;
+			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+			reduction = isPV && reduction > 0 ? 1 : 0;
 
 			int eval;
 			if (moveCount == 0)
