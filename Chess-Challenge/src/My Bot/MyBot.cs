@@ -76,7 +76,7 @@ public class MyBot : IChessBot
 		{-10,  0,  0,  0,  0,  0,  0,-10,},
 		{-20,-10,-10,-5,-5,-10,-10,-20}
 	};
-
+	bool playerColor;
 	bool timeToStop = false;
 	ChessChallenge.API.Timer timer;
 	/// <summary>
@@ -89,7 +89,8 @@ public class MyBot : IChessBot
 		//killerMoves.Clear();
 		timer = _timer;
 		historyTable = new int[2, 7, 64];
-		endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
+		playerColor = board.IsWhiteToMove;
+		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 10, (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f));
 		timeToStop = false;
 		return bestMove(board, board.IsWhiteToMove);
 	}
@@ -119,6 +120,7 @@ public class MyBot : IChessBot
 		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
 		Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
 
+		if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
 		return overAllBestMove;
 	}
@@ -144,26 +146,16 @@ public class MyBot : IChessBot
 	int evaluation(Board board)
 	{
 		int eval = 0;
-		eval += materialEval(board, true);
-		eval -= materialEval(board, false);
-
-		return eval;
-	}
-
-
-	int materialEval(Board board, bool color)
-	{
-		int eval = 0;
 		int gamePhase = 3900;
 		for (int i = 0; i < 5; i++)
 		{
-			PieceList pieces = board.GetPieceList((PieceType)(i + 1), color);
-			eval += pieceValues[i] * pieces.Count;
+			PieceList pieces = board.GetPieceList((PieceType)(i + 1), playerColor);
+			gamePhase -= pieceValues[i] * pieces.Count;
 		}
-		gamePhase -= eval;
-		for (int i = 0; i < 6; i++)
+		foreach (PieceList pieces in board.GetAllPieceLists())
 		{
-			PieceList pieces = board.GetPieceList((PieceType)(i + 1), color);
+			int playerSign = pieces.IsWhitePieceList ? 1 : -1;
+			eval += pieces.Count * pieceValues[(int)pieces.TypeOfPieceInList - 1] * playerSign;
 			foreach (Piece piece in pieces)
 			{
 				switch (piece.PieceType)
@@ -171,30 +163,32 @@ public class MyBot : IChessBot
 					case PieceType.Pawn:
 						int openingEval = pawnMatrix[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
 						int endgameEval = 10 * (piece.IsWhite ? piece.Square.Rank - 1 : 6 - piece.Square.Rank);
-						eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900;
+						eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900 * playerSign;
 						break;
 					case PieceType.Knight:
-						eval += knightMatrix[piece.Square.Rank, piece.Square.File];
+						eval += knightMatrix[piece.Square.Rank, piece.Square.File] * playerSign;
 						break;
 					case PieceType.Bishop:
-						eval += bishopMatrix[piece.Square.Rank, piece.Square.File];
+						eval += bishopMatrix[piece.Square.Rank, piece.Square.File] * playerSign;
 						break;
 					case PieceType.Queen:
-						eval += Queens[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
+						eval += Queens[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File] * playerSign;
 						break;
 					case PieceType.Rook:
-						eval += Rooks[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File];
+						eval += Rooks[piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File] * playerSign;
 						break;
 					case PieceType.King:
 						openingEval = getKingMatrix(piece.IsWhite ? piece.Square.Rank : 7 - piece.Square.Rank, piece.Square.File);
 						endgameEval = knightMatrix[piece.Square.Rank, piece.Square.File];
-						eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900;
+						eval += ((openingEval * (3900 - gamePhase)) + (endgameEval * gamePhase)) / 3900 * playerSign;
 						break;
 				}
 			}
 		}
 		return eval;
 	}
+
+
 	// History table definition
 	int[,,] historyTable;
 	// Define a structure to store transposition table entries
@@ -281,7 +275,6 @@ public class MyBot : IChessBot
 		Move[] legalmoves = board.GetLegalMoves();
 		Move goodMove = notRoot ? bestMove : overAllBestMove;
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
-
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 		Move bestFoundMove = Move.NullMove;
 

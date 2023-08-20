@@ -88,7 +88,7 @@ namespace ChessChallenge.Example
 			//killerMoves.Clear();
 			timer = _timer;
 			historyTable = new int[2, 7, 64];
-			endMiliseconds = (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f);
+			endMiliseconds = Math.Min(timer.MillisecondsRemaining - 10, (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f));
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
@@ -118,6 +118,7 @@ namespace ChessChallenge.Example
 			Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
 			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
 
+			if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
 			return overAllBestMove;
 		}
@@ -305,7 +306,7 @@ namespace ChessChallenge.Example
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 
 				int eval;
-				if (moveCount == 0)
+				if (moveCount == 1)
 					eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
 				else
 				{
