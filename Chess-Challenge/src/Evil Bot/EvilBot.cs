@@ -89,8 +89,7 @@ namespace ChessChallenge.Example
 			timer = _timer;
 			historyTable = new int[2, 7, 64];
 			playerColor = board.IsWhiteToMove;
-			//		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining/30);
-			endMiliseconds = Math.Min(timer.MillisecondsRemaining - 10, (int)Math.Ceiling(timer.MillisecondsRemaining * 0.985f));
+			endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining * 29 / 30);
 			timeToStop = false;
 			return bestMove(board, board.IsWhiteToMove);
 		}
