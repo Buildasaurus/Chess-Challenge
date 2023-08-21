@@ -327,9 +327,9 @@ public class MyBot : IChessBot
 
 			//Early stop at top level
 			if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
-			if (timeToStop && !notRoot)
+			if (timeToStop)
 			{
-				break;
+				return 0;
 			}
 
 			board.MakeMove(move);
@@ -351,7 +351,7 @@ public class MyBot : IChessBot
 			if (eval > max)
 			{
 				//if root level new best move is found, then save it to be played or for next iteration
-				if (ply == 0)
+				if (ply == 0 && !timeToStop)
 				{
 					overAllBestMove = move;
 					Console.WriteLine($"info string new Overall Best move: {move}");
