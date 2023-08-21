@@ -4,11 +4,7 @@ using System;
 using System.Linq;
 
 /// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
+/// updated PST, time control, and added mid/endgame values for pieces
 /// </summary>
 public class V6 : IChessBot
 {
