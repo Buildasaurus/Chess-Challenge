@@ -115,7 +115,7 @@ public class MyBot : IChessBot
 	int endMiliseconds = 0;
 	public Move Think(Board board, ChessChallenge.API.Timer _timer)
 	{
-		Console.WriteLine("-----My bot thinking----");
+		Console.WriteLine("-----My bot thinking----");//#DEBUG
 		//killerMoves.Clear();
 		timer = _timer;
 		historyTable = new int[2, 7, 64];
@@ -142,15 +142,16 @@ public class MyBot : IChessBot
 			startime = timer.MillisecondsRemaining;
 
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, color);
-			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
-			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
+			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
 		}
-		Console.WriteLine("info string -------node count------- " + counters[^1]);
-		Console.WriteLine("info string useful lookups:  " + lookups);
-		Console.WriteLine("info string Entry count " + entryCount);
-		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
-		Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
+		
+		Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+		Console.WriteLine("info string useful lookups:  " + lookups);//#DEBUG
+		Console.WriteLine("info string Entry count " + entryCount);//#DEBUG
+		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+		Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
 		if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
@@ -326,7 +327,7 @@ public class MyBot : IChessBot
 			bestMove = transposition.move;
 		}
 
-		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 		// Generate legal moves and sort them
 		Move goodMove = notRoot ? bestMove : overAllBestMove;
@@ -389,7 +390,7 @@ public class MyBot : IChessBot
 					if (ply == 0 && !timeToStop)
 					{
 						overAllBestMove = move;
-						Console.WriteLine($"info string new Overall Best move: {move}");
+						Console.WriteLine($"info string new Overall Best move: {move}");//#DEBUG
 					}
 					bestFoundMove = move;
 					max = eval;
