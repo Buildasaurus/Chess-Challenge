@@ -263,21 +263,31 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
-		bool isInCheck = board.IsInCheck();
-		bool notRoot = ply > 0;
+		//Much used variables
 		bool isPV = beta - alpha > 1;
-		//return early statements.
-		if (board.IsInCheckmate())
-			return ply-999999;
-		counters[^1]++;
-		if (notRoot && (board.IsDraw()))
+		bool notRoot = ply > 0;
+		bool isInCheck = board.IsInCheck();
+
+		//Draw detection
+		if (notRoot && board.IsDraw())
 			return 0;
+		if (board.IsInCheckmate())
+			return ply - 999999;
+
+		//Debug
+		counters[^1]++;
+
+
+
+		//check extensions - MUST BE BEFORE QSEARCH	
 		if (isInCheck)
 			depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
+		
+		//QSearch
 		bool isQSearch = depth <= 0;
 		if (isQSearch)
 		{
-			int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
+			int standingPat = isInCheck ? -998999 : color * evaluation(board);
 
 			if (standingPat >= beta)
 			{
@@ -300,10 +310,8 @@ public class MyBot : IChessBot
 			if (score >= beta)
 				return beta;
 		}
-
-		ulong zobristHash = board.ZobristKey;
 		// Transposition table lookup
-
+		ulong zobristHash = board.ZobristKey;
 		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
 		Move bestMove = Move.NullMove;
 		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
@@ -321,8 +329,10 @@ public class MyBot : IChessBot
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 		// Generate legal moves and sort them
-		Move[] legalmoves = board.GetLegalMoves(isQSearch);
 		Move goodMove = notRoot ? bestMove : overAllBestMove;
+
+		// Gamestate, checkmate and draws - THIS PLACEMENT HASN'T BEEN TESTED - EARLIER IT WAS BEFORE QSEARCH - THIS PLACEMENT IS RUNNING TEST
+		Move[] legalmoves = board.GetLegalMoves(isQSearch);
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 		Move bestFoundMove = Move.NullMove;
