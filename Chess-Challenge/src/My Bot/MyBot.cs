@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 /// <summary>
 /// 
@@ -273,12 +274,20 @@ public class MyBot : IChessBot
 			return 0;
 		if (isInCheck)
 			depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
-
-		if (depth <= 0)
+		bool isQSearch = depth <= 0;
+		if (isQSearch)
 		{
-			if (isInCheck) Console.WriteLine("HEY");
-			// Call Quiescence function at final depth
-			return Quiescence(board, alpha, beta, color);
+			int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
+
+			if (standingPat >= beta)
+			{
+				return beta;
+			}
+
+			if (alpha < standingPat)
+			{
+				alpha = standingPat;
+			}
 		}
 
 		// Null move pruning - is perhaps best with more time on the clock?
@@ -312,7 +321,7 @@ public class MyBot : IChessBot
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
 
 		// Generate legal moves and sort them
-		Move[] legalmoves = board.GetLegalMoves();
+		Move[] legalmoves = board.GetLegalMoves(isQSearch);
 		Move goodMove = notRoot ? bestMove : overAllBestMove;
 		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
@@ -334,107 +343,63 @@ public class MyBot : IChessBot
 
 			board.MakeMove(move);
 
-			// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-			int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
-			//reduction = isPV && reduction > 0 ? 1 : 0;
+			if(isQSearch)
+			{
+				int score = -negamax(board, 0, ply + 1, -beta, -alpha, -color);
+				board.UndoMove(move);
 
-			int eval;
-			if (moveCount == 1)
-				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+				if (score >= beta)
+				{
+					return beta;
+				}
+				if (score > alpha)
+				{
+					alpha = score;
+				}
+			}
 			else
 			{
-				eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
-				if (eval > alpha || (reduction > 0 && beta > eval))
-					eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
-			}
+				// LMR: reduce the depth of the search for moves beyond a certain move count threshold
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+				//reduction = isPV && reduction > 0 ? 1 : 0;
 
-			if (eval > max)
-			{
-				//if root level new best move is found, then save it to be played or for next iteration
-				if (ply == 0 && !timeToStop)
+				int eval;
+				if (moveCount == 1)
+					eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+				else
 				{
-					overAllBestMove = move;
-					Console.WriteLine($"info string new Overall Best move: {move}");
+					eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
+					if (eval > alpha || (reduction > 0 && beta > eval))
+						eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
 				}
-				bestFoundMove = move;
-				max = eval;
-			}
-			board.UndoMove(move);
-			alpha = Math.Max(alpha, max);
-			if (alpha >= beta)
-			{
-				//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
-				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
-				break;
+
+				if (eval > max)
+				{
+					//if root level new best move is found, then save it to be played or for next iteration
+					if (ply == 0 && !timeToStop)
+					{
+						overAllBestMove = move;
+						Console.WriteLine($"info string new Overall Best move: {move}");
+					}
+					bestFoundMove = move;
+					max = eval;
+				}
+				board.UndoMove(move);
+				alpha = Math.Max(alpha, max);
+				if (alpha >= beta)
+				{
+					//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
+					historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
+					break;
+				}
 			}
 		}
 
+		if (isQSearch) return alpha;
 		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
 		return max;
 	}
 
-	int Quiescence(Board board, int alpha, int beta, int color)
-	{
-
-		int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
-
-		if (standingPat >= beta)
-		{
-			return beta;
-		}
-
-		if (alpha < standingPat)
-		{
-			alpha = standingPat;
-		}
-		//**new code** For some reason seemed to worsen QSearch. So i'ts outcommented.
-		/*ulong zobristHash = board.ZobristKey;
-
-		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
-		// Transposition table lookup
-		Move bestMove = Move.NullMove;
-		if (transposition.zobristHash == zobristHash)
-		{
-			lookups++;
-			if (transposition.flag == 2) // lower bound
-				alpha = Math.Max(alpha, transposition.evaluation);
-			else // upper bound
-				beta = Math.Min(beta, transposition.evaluation);
-
-			//If we have an "exact" score (a < score < beta) just use that
-			//if (transposition.flag == 1) return transposition.evaluation;
-			//If we have a lower bound better than beta, use that
-			//if (transposition.flag == 2 && transposition.evaluation >= beta) return transposition.evaluation;
-			//If we have an upper bound worse than alpha, use that
-			//if (transposition.flag == 3 && transposition.evaluation <= alpha) return transposition.evaluation;
-			bestMove = transposition.move;
-		}
-		//**end**
-		*/
-
-		int oppositeColor = -1 * color;
-
-		Move[] legalmoves = board.GetLegalMoves(true);
-		Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, Move.NullMove).CompareTo(MoveOrderingHeuristic(a, board, Move.NullMove)));
-		int score = 0;
-		//start searching
-		foreach (Move move in legalmoves)
-		{
-			board.MakeMove(move);
-			score = -Quiescence(board, -beta, -alpha, oppositeColor);
-			board.UndoMove(move);
-
-			if (score >= beta)
-			{
-				return beta;
-			}
-			if (score > alpha)
-			{
-				alpha = score;
-			}
-		}
-		return alpha;
-	}
 
 
 	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
