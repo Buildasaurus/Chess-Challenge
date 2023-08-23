@@ -39,7 +39,7 @@ public class MyBot : IChessBot
 				.ToArray();
 		}).ToArray();
 	}
-	/*
+	
 	void printtables()
 	{
 		Console.WriteLine(UnpackedPestoTables.ToString());
@@ -58,8 +58,7 @@ public class MyBot : IChessBot
 				}
 			}
 		}
-		Console.WriteLine(UnpackedPestoTables[0][0]);
-	}*/
+	}
 
 
 	bool playerColor;
@@ -74,7 +73,7 @@ public class MyBot : IChessBot
 		if (board.GameMoveHistory.Length < 2)
 		{
 			ExampleEvaluation(); 
-			//printtables();
+			printtables();
 		}
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
 		//killerMoves.Clear();
@@ -90,7 +89,7 @@ public class MyBot : IChessBot
 		for (sbyte d = 1; d <= 32; d++)
 		{
 			if (timeToStop) break;
-			startime = timer.MillisecondsRemaining;//#DEBUG
+			startime = timer.MillisecondsRemaining;
 
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
@@ -119,7 +118,7 @@ public class MyBot : IChessBot
 		int score = 0;
 		if (move == goodMove) score = 100000000;
 		// Give higher scores to captures and promotions
-		// Use MVV-LVA heuristic
+			// Use MVV-LVA heuristic
 		if (move.IsCapture)	
 			score += 10 * PieceValues[(int)move.CapturePieceType - 1] - PieceValues[(int)move.MovePieceType - 1];
 		
@@ -141,21 +140,24 @@ public class MyBot : IChessBot
 			gamePhase -= piececount * phase_weight[i];
 		}
 		gamePhase = Math.Max(gamePhase, 0);
-		int openingEval = 0;
-		int endgameEval = 0;
+
 		foreach (PieceList pList in board.GetAllPieceLists())
 		{
+			
+			int openingEval = 0;
+			int endgameEval = 0;
 			foreach (Piece piece in pList)
 			{
 				int pieceType = (int)piece.PieceType - 1;
-				int pieceIndex = piece.Square.Index;
+				int pieceIndex = pList.IsWhitePieceList ? 63 - piece.Square.Index : piece.Square.Index;
 				openingEval += UnpackedPestoTables[pieceIndex][pieceType];
 				int a = pieceType + 6;
 				endgameEval += UnpackedPestoTables[pieceIndex][a];
 
 			}
+			eval += ((openingEval * (24 - gamePhase)) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
+
 		}
-		eval += ((openingEval * (24 - gamePhase)) + (endgameEval * gamePhase)) / 24 * (board.IsWhiteToMove ? 1 : -1);
 
 		return eval;
 	}
