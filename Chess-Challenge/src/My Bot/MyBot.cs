@@ -119,34 +119,24 @@ public class MyBot : IChessBot
 		//killerMoves.Clear();
 		timer = _timer;
 		historyTable = new int[2, 7, 64];
-		playerColor = board.IsWhiteToMove;
 		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining*29/30);
 		timeToStop = false;
-		return bestMove(board, board.IsWhiteToMove);
-	}
-	int[] pieceValues = { 82, 337, 365, 477, 1025, 0 };
-	int[] endGameValues = { 94, 281, 297, 512, 936, 0 };
-
-	Move overAllBestMove;
-	Move bestMove(Board board, bool playerToMove)
-	{
-		lookups = 0;
-		entryCount = 0;
-		counters.Add(0);
-		int color = playerToMove ? 1 : -1;
-		int bestEval = 0;
-		int thinkStart = timer.MillisecondsRemaining;
+		lookups = 0; //#DEBUG
+		entryCount = 0; //#DEBUG
+		counters.Add(0);//#DEBUG
+		int bestEval = 0; //#DEBUG
+		int thinkStart = timer.MillisecondsRemaining; //#DEBUG
 		for (sbyte d = 1; d <= 32; d++)
 		{
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining;
 
-			bestEval = -negamax(board, d, 0, -10000000, 10000000, color);
+			bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
 		}
-		
+
 		Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 		Console.WriteLine("info string useful lookups:  " + lookups);//#DEBUG
 		Console.WriteLine("info string Entry count " + entryCount);//#DEBUG
@@ -157,6 +147,10 @@ public class MyBot : IChessBot
 
 		return overAllBestMove;
 	}
+	int[] pieceValues = { 82, 337, 365, 477, 1025, 0 };
+	int[] endGameValues = { 94, 281, 297, 512, 936, 0 };
+
+	Move overAllBestMove;
 
 
 
