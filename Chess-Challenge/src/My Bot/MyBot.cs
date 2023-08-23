@@ -13,7 +13,7 @@ using System.Linq;
 public class MyBot : IChessBot
 {
 
-	List<int> counters = new List<int>();
+	List<int> counters = new List<int>(); //#DEBUG
 
 	private readonly decimal[] PackedPestoTables = {
 			63746705523041458768562654720m, 71818693703096985528394040064m, 75532537544690978830456252672m, 75536154932036771593352371712m, 76774085526445040292133284352m, 3110608541636285947269332480m, 936945638387574698250991104m, 75531285965747665584902616832m,
@@ -61,20 +61,17 @@ public class MyBot : IChessBot
 	}*/
 
 
-	bool playerColor;
 	bool timeToStop = false;
 	Timer timer;
 	/// <summary>
 	/// if under this miliseconds remaing, then should stop.
 	/// </summary>
-	int endMiliseconds = 0;
-	public Move Think(Board board, ChessChallenge.API.Timer _timer)
+	int endMiliseconds;
+	public Move Think(Board board, Timer _timer)
 	{
 		if (board.GameMoveHistory.Length < 2)
-		{
 			ExampleEvaluation(); 
-			//printtables();
-		}
+		
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
 		//killerMoves.Clear();
 		timer = _timer;
@@ -134,10 +131,10 @@ public class MyBot : IChessBot
 	{
 		int eval = 0;
 		int gamePhase = 24;
-		for (int i = 0; i < 5; i++)
+		for (int i = 1; i < 6; i++)
 		{
-			int piececount = board.GetPieceList((PieceType)(i + 1), false).Count + board.GetPieceList((PieceType)(i + 1), true).Count;
-			gamePhase -= piececount * phase_weight[i];
+			int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
+			gamePhase -= piececount * phase_weight[i-1];
 		}
 		gamePhase = Math.Max(gamePhase, 0);
 
@@ -225,14 +222,12 @@ public class MyBot : IChessBot
 			int standingPat = isInCheck ? -998999 : color * evaluation(board);
 
 			if (standingPat >= beta)
-			{
 				return beta;
-			}
+			
 
 			if (alpha < standingPat)
-			{
 				alpha = standingPat;
-			}
+			
 		}
 
 		// Null move pruning - is perhaps best with more time on the clock?
@@ -297,10 +292,7 @@ public class MyBot : IChessBot
 				{
 					return beta;
 				}
-				if (score > alpha)
-				{
-					alpha = score;
-				}
+				alpha = Math.Max(alpha, score);
 			}
 			else
 			{
@@ -342,28 +334,23 @@ public class MyBot : IChessBot
 		}
 
 		if (isQSearch) return alpha;
-		storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
-		return max;
-	}
-
-
-
-	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
-	{
-		entryCount++; //#DEBUG
 
 		// Transposition table store
-		transposition.evaluation = bestEvaluation;
+		entryCount++; //#DEBUG
+
+		transposition.evaluation = max;
 		transposition.zobristHash = zobristHash;
-		transposition.move = bestMove;
-		if (bestEvaluation > alpha)
+		transposition.move = bestFoundMove;
+		if (max > alpha)
 			transposition.flag = 1; //"exact" score
-		else if (bestEvaluation >= beta)
+		else if (max >= beta)
 		{
 			transposition.flag = 2; //lower bound
 		}
 		else
 			transposition.flag = 3; //upper bound
-		transposition.depth = (sbyte)depth;
+		transposition.depth = depth; 
+		
+		return max;
 	}
 }
