@@ -51,12 +51,12 @@ public class MyBot : IChessBot
 
 
 	bool timeToStop = false;
-	Timer timer;
+	ChessChallenge.API.Timer timer;
 	/// <summary>
 	/// if under this miliseconds remaing, then should stop.
 	/// </summary>
 	int endMiliseconds;
-	public Move Think(Board board, Timer _timer)
+	public Move Think(Board board, ChessChallenge.API.Timer _timer)
 	{
 		if (board.GameMoveHistory.Length < 2)
 		{
@@ -183,7 +183,7 @@ public class MyBot : IChessBot
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
 		depth = Math.Max(depth, (sbyte)0);
-
+		int oldAlpha = alpha;
 		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 															//Much used variables
 		bool isPV = beta - alpha > 1;
@@ -239,7 +239,7 @@ public class MyBot : IChessBot
 		//If we have an "exact" score (a < score < beta) just use that
 		//If we have a lower bound better than beta, use that
 		//If we have an upper bound worse than alpha, use that
-		if (entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
+		if (notRoot && entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
 				// Exact
 				entryFlag == 1 ||
 				// Upperbound
@@ -339,7 +339,7 @@ public class MyBot : IChessBot
 			bestFoundMove == default ? entry.Item2 : bestFoundMove,
 			max,
 			depth,
-			(byte)(max >= beta ? 3 : max <= alpha ? 2 : 1));
+			(byte)(max >= beta ? 3 : max <= oldAlpha ? 2 : 1));
 
 		return max;
 	}
