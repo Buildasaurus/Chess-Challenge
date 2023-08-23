@@ -258,6 +258,9 @@ public class MyBot : IChessBot
 	/// <returns></returns>
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
+		depth = Math.Max(depth, (sbyte)0);
+
+		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 		//Much used variables
 		bool isPV = beta - alpha > 1;
 		bool notRoot = ply > 0;
@@ -270,13 +273,13 @@ public class MyBot : IChessBot
 			return ply - 999999;
 
 		//Debug
-		counters[^1]++;
+		counters[^1]++; //#DEBUG
 
 
 
 		//check extensions - MUST BE BEFORE QSEARCH	
 		if (isInCheck)
-			depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
+			depth++;
 		
 		//QSearch
 		bool isQSearch = depth <= 0;
@@ -365,17 +368,18 @@ public class MyBot : IChessBot
 			else
 			{
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-				int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 				//reduction = isPV && reduction > 0 ? 1 : 0;
-
+				//local search function to save tokens.
+				int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
 				int eval;
 				if (moveCount == 1)
-					eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+					eval = search(reduction, beta);
 				else
 				{
-					eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
+					eval = search(reduction, alpha+1); //should be +, because it will be negated in teh search method.
 					if (eval > alpha || (reduction > 0 && beta > eval))
-						eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
+						eval = search(0, beta);
 				}
 
 				if (eval > max)
