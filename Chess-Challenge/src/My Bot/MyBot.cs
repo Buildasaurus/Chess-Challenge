@@ -24,11 +24,11 @@ public class MyBot : IChessBot
 			75502243563200070682362835182m, 78896921543467230670583692029m, 2489164206166677455700101373m, 4338830174078735659125311481m, 4960199192571758553533648130m, 3420013420025511569771334658m, 1557077491473974933188251927m, 77376040767919248347203368440m,
 			73949978050619586491881614568m, 77043619187199676893167803647m, 1212557245150259869494540530m, 3081561358716686153294085872m, 3392217589357453836837847030m, 1219782446916489227407330320m, 78580145051212187267589731866m, 75798434925965430405537592305m,
 			68369566912511282590874449920m, 72396532057599326246617936384m, 75186737388538008131054524416m, 77027917484951889231108827392m, 73655004947793353634062267392m, 76417372019396591550492896512m, 74568981255592060493492515584m, 70529879645288096380279255040m,
-		}; 
-	 int[][] UnpackedPestoTables;
+		};
+	int[][] UnpackedPestoTables;
 
 
-	
+
 	/*void printtables()
 	{
 		Console.WriteLine(UnpackedPestoTables.ToString());
@@ -68,13 +68,13 @@ public class MyBot : IChessBot
 						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
 					.ToArray();
 			}).ToArray();
-		}; 
-		
+		};
+
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
-		//killerMoves.Clear();
+													  //killerMoves.Clear();
 		timer = _timer;
 		historyTable = new int[2, 7, 64];
-		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining*29/30);
+		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining * 29 / 30);
 		timeToStop = false;
 		lookups = 0; //#DEBUG
 		entryCount = 0; //#DEBUG
@@ -113,10 +113,10 @@ public class MyBot : IChessBot
 		int score = 0;
 		if (move == goodMove) score = 100000000;
 		// Give higher scores to captures and promotions
-			// Use MVV-LVA heuristic
-		if (move.IsCapture)	
+		// Use MVV-LVA heuristic
+		if (move.IsCapture)
 			score += 10 * PieceValues[(int)move.CapturePieceType - 1] - PieceValues[(int)move.MovePieceType - 1];
-		
+
 		if (move.IsPromotion)
 			score += 900;
 		//If this move has caused lots of cutoffs, let's put it higher.
@@ -132,13 +132,13 @@ public class MyBot : IChessBot
 		for (int i = 1; i < 6; i++)
 		{
 			int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
-			gamePhase -= piececount * phase_weight[i-1];
+			gamePhase -= piececount * phase_weight[i - 1];
 		}
 		gamePhase = Math.Max(gamePhase, 0);
 
 		foreach (PieceList pList in board.GetAllPieceLists())
 		{
-			
+
 			int openingEval = 0;
 			int endgameEval = 0;
 			foreach (Piece piece in pList)
@@ -160,21 +160,13 @@ public class MyBot : IChessBot
 	// History table definition
 	int[,,] historyTable;
 	// Define a structure to store transposition table entries
-	struct Transposition
-	{
-		public ulong zobristHash;
-		public Move move;
-		public int evaluation;
-		public sbyte depth;
-		public byte flag;
-	};
-	int lookups = 0;
-	int entryCount = 0;
-	int startime;
+	int lookups = 0; //DEBUG
+	int entryCount = 0;//DEBUG
+	int startime;//DEBUG
 
 
-	// Create a transposition table
-	Transposition[] transpositionTable = new Transposition[0x800000];
+	// Create a transposition table // key, move, score/eval, depth, flag.
+	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x800000];
 	// Define a data structure to store killer moves
 	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 	/// <summary>
@@ -193,7 +185,7 @@ public class MyBot : IChessBot
 		depth = Math.Max(depth, (sbyte)0);
 
 		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
-		//Much used variables
+															//Much used variables
 		bool isPV = beta - alpha > 1;
 		bool notRoot = ply > 0;
 		bool isInCheck = board.IsInCheck();
@@ -212,7 +204,7 @@ public class MyBot : IChessBot
 		//check extensions - MUST BE BEFORE QSEARCH	
 		if (isInCheck)
 			depth++;
-		
+
 		//QSearch
 		bool isQSearch = depth <= 0;
 		if (isQSearch)
@@ -221,11 +213,11 @@ public class MyBot : IChessBot
 
 			if (standingPat >= beta)
 				return beta;
-			
+
 
 			if (alpha < standingPat)
 				alpha = standingPat;
-			
+
 		}
 
 		// Null move pruning - is perhaps best with more time on the clock?
@@ -240,19 +232,25 @@ public class MyBot : IChessBot
 		}
 		// Transposition table lookup
 		ulong zobristHash = board.ZobristKey;
-		ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+		ref var entry = ref transpositionTable[zobristHash & 0x7FFFFF];
+		int entryScore = entry.Item3, entryFlag = entry.Item5;
+
 		Move bestMove = Move.NullMove;
-		if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
+		//If we have an "exact" score (a < score < beta) just use that
+		//If we have a lower bound better than beta, use that
+		//If we have an upper bound worse than alpha, use that
+		if (entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
+				// Exact
+				entryFlag == 1 ||
+				// Upperbound
+				entryFlag == 2 && entryScore <= alpha ||
+				// Lowerbound
+				entryFlag == 3 && entryScore >= beta))
 		{
 			lookups++;
-			//If we have an "exact" score (a < score < beta) just use that
-			//If we have a lower bound better than beta, use that
-			//If we have an upper bound worse than alpha, use that
-			if ((transposition.flag == 1) || 
-				(transposition.flag == 2 && transposition.evaluation >= beta) || 
-				(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
-			bestMove = transposition.move;
+			return entryScore;
 		}
+
 
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
@@ -281,7 +279,7 @@ public class MyBot : IChessBot
 
 			board.MakeMove(move);
 
-			if(isQSearch)
+			if (isQSearch)
 			{
 				int score = -negamax(board, 0, ply + 1, -beta, -alpha, -color);
 				board.UndoMove(move);
@@ -304,7 +302,7 @@ public class MyBot : IChessBot
 					eval = search(reduction, beta);
 				else
 				{
-					eval = search(reduction, alpha+1); //should be +, because it will be negated in the search method.
+					eval = search(reduction, alpha + 1); //should be +, because it will be negated in the search method.
 					if (eval > alpha || (reduction > 0 && beta > eval))
 						eval = search(0, beta);
 				}
@@ -335,20 +333,14 @@ public class MyBot : IChessBot
 
 		// Transposition table store
 		entryCount++; //#DEBUG
+					  // Transposition table insertion
+		entry = new(
+			zobristHash,
+			bestFoundMove == default ? entry.Item2 : bestFoundMove,
+			max,
+			depth,
+			(byte)(max >= beta ? 3 : max <= alpha ? 2 : 1));
 
-		transposition.evaluation = max;
-		transposition.zobristHash = zobristHash;
-		transposition.move = bestFoundMove;
-		if (max > alpha)
-			transposition.flag = 1; //"exact" score
-		else if (max >= beta)
-		{
-			transposition.flag = 2; //lower bound
-		}
-		else
-			transposition.flag = 3; //upper bound
-		transposition.depth = depth; 
-		
 		return max;
 	}
 }
