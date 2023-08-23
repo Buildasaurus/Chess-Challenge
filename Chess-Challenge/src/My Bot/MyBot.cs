@@ -27,18 +27,7 @@ public class MyBot : IChessBot
 		}; 
 	 int[][] UnpackedPestoTables;
 
-	// Constructor unpacks the tables and "bakes in" the piece values to use in your evaluation
-	void ExampleEvaluation()
-	{
-		UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
-		{
-			int pieceType = 0;
-			return decimal.GetBits(packedTable).Take(3)
-				.SelectMany(c => BitConverter.GetBytes(c)
-					.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
-				.ToArray();
-		}).ToArray();
-	}
+
 	
 	/*void printtables()
 	{
@@ -70,7 +59,16 @@ public class MyBot : IChessBot
 	public Move Think(Board board, Timer _timer)
 	{
 		if (board.GameMoveHistory.Length < 2)
-			ExampleEvaluation(); 
+		{
+			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
+			{
+				int pieceType = 0;
+				return decimal.GetBits(packedTable).Take(3)
+					.SelectMany(c => BitConverter.GetBytes(c)
+						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
+					.ToArray();
+			}).ToArray();
+		}; 
 		
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
 		//killerMoves.Clear();
