@@ -377,7 +377,7 @@ public class MyBot : IChessBot
 					eval = search(reduction, beta);
 				else
 				{
-					eval = search(reduction, alpha+1); //should be +, because it will be negated in teh search method.
+					eval = search(reduction, alpha+1); //should be +, because it will be negated in the search method.
 					if (eval > alpha || (reduction > 0 && beta > eval))
 						eval = search(0, beta);
 				}
@@ -413,7 +413,7 @@ public class MyBot : IChessBot
 
 	void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
 	{
-		entryCount++;
+		entryCount++; //#DEBUG
 
 		// Transposition table store
 		transposition.evaluation = bestEvaluation;
