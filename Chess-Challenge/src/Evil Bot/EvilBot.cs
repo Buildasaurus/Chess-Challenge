@@ -14,146 +14,101 @@ namespace ChessChallenge.Example
 
 		List<int> counters = new List<int>();
 
-		int[,] mg_knight_table = {
-		{-167, -89, -34, -49,  61, -97, -15, -107},
-		{-73, -41,  72,  36,  23,  62,   7,  -17},
-		{-47,  60,  37,  65,  84, 129,  73,   44},
-		{-9,  17,  19,  53,  37,  69,  18,   22},
-		{-13,   4,  16,  13,  28,  19,  21,   -8},
-		{-23, -9 ,12 ,10 ,19 ,17 ,25 ,-16},
-		{-29 ,-53 ,-12 ,-3 ,-1 ,18 ,-14 ,-19},
-		{-105 ,-21 ,-58 ,-33 ,-17 ,-28 ,-19 ,-23}
-	};
+		private readonly decimal[] PackedPestoTables = {
+			63746705523041458768562654720m, 71818693703096985528394040064m, 75532537544690978830456252672m, 75536154932036771593352371712m, 76774085526445040292133284352m, 3110608541636285947269332480m, 936945638387574698250991104m, 75531285965747665584902616832m,
+			77047302762000299964198997571m, 3730792265775293618620982364m, 3121489077029470166123295018m, 3747712412930601838683035969m, 3763381335243474116535455791m, 8067176012614548496052660822m, 4977175895537975520060507415m, 2475894077091727551177487608m,
+			2458978764687427073924784380m, 3718684080556872886692423941m, 4959037324412353051075877138m, 3135972447545098299460234261m, 4371494653131335197311645996m, 9624249097030609585804826662m, 9301461106541282841985626641m, 2793818196182115168911564530m,
+			77683174186957799541255830262m, 4660418590176711545920359433m, 4971145620211324499469864196m, 5608211711321183125202150414m, 5617883191736004891949734160m, 7150801075091790966455611144m, 5619082524459738931006868492m, 649197923531967450704711664m,
+			75809334407291469990832437230m, 78322691297526401047122740223m, 4348529951871323093202439165m, 4990460191572192980035045640m, 5597312470813537077508379404m, 4980755617409140165251173636m, 1890741055734852330174483975m, 76772801025035254361275759599m,
+			75502243563200070682362835182m, 78896921543467230670583692029m, 2489164206166677455700101373m, 4338830174078735659125311481m, 4960199192571758553533648130m, 3420013420025511569771334658m, 1557077491473974933188251927m, 77376040767919248347203368440m,
+			73949978050619586491881614568m, 77043619187199676893167803647m, 1212557245150259869494540530m, 3081561358716686153294085872m, 3392217589357453836837847030m, 1219782446916489227407330320m, 78580145051212187267589731866m, 75798434925965430405537592305m,
+			68369566912511282590874449920m, 72396532057599326246617936384m, 75186737388538008131054524416m, 77027917484951889231108827392m, 73655004947793353634062267392m, 76417372019396591550492896512m, 74568981255592060493492515584m, 70529879645288096380279255040m,
+		};
+		int[][] UnpackedPestoTables;
 
-		int[,] mg_bishop_table = {
-		{-29   ,4   ,-82   ,-37   ,-25   ,-42   ,7   ,-8 },
-		{-26   ,16   ,-18   ,-13   ,30   ,59   ,18   ,-47 },
-		{-16   ,37   ,43   ,40   ,35   ,50   ,37   ,-2 },
-		{-4    ,5    ,19    ,50    ,37    ,37    ,7    ,-2 },
-		{-6    ,13    ,13    ,26    ,34    ,12    ,10    ,4 },
-		{0     ,15     ,15     ,15     ,14     ,27     ,18     ,10 },
-		{4     ,15     ,16      ,0      ,7      ,21      ,33      ,1 },
-		{-33    ,-3     ,-14     ,-21     ,-13     ,-12     ,-39     ,-21 }
-	};
+		// Constructor unpacks the tables and "bakes in" the piece values to use in your evaluation
+		void ExampleEvaluation()
+		{
+			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
+			{
+				int pieceType = 0;
+				return decimal.GetBits(packedTable).Take(3)
+					.SelectMany(c => BitConverter.GetBytes(c)
+						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
+					.ToArray();
+			}).ToArray();
+		}
 
+		/*void printtables()
+		{
+			Console.WriteLine(UnpackedPestoTables.ToString());
+			for(int i = 0; i < 12; i++)
+			{
 
-		int[,] mg_rook_table = {
-		{ 32,  42,  32,  51, 63,  9,  31,  43},
-		{ 27,  32,  58,  62, 80, 67,  26,  44},
-		{ -5,  19,  26,  36, 17, 45,  61,  16},
-		{-24, -11,   7,  26, 24, 35,  -8, -20},
-		{-36, -26, -12,  -1,  9, -7,   6, -23},
-		{-45, -25, -16, -17,  3,  0,  -5, -33},
-		{-44, -16, -20,  -9, -1, 11,  -6, -71},
-		{-19, -13,   1,  17, 16,  7, -37, -26}
-	};
-
-		int[,] mg_queen_table = {
-		{-28,   0,  29,  12,  59,  44,  43,  45},
-		{-24, -39,  -5,   1, -16,  57,  28,  54},
-		{-13, -17,   7,   8,  29,  56,  47,  57},
-		{-27, -27, -16, -16,  -1,  17,  -2,   1},
-		{ -9, -26,  -9, -10,  -2,  -4,   3,  -3},
-		{-14,   2, -11,  -2,  -5,   2, 14 ,   5},
-		{-35 , -8 ,11 ,   2 ,   8 ,15 ,-3 ,   1},
-		{ -1 ,-18 ,-9 ,10 ,-15 ,-25 ,-31 ,-50}
-	};
-		int[,] mg_pawn_table = {
-		{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 },
-		{98 ,134 ,61 ,95 ,68 ,126 ,34 ,-11},
-		{-6 ,7 ,26 ,31 ,65 ,56 ,25 ,-20},
-		{-14 ,13 ,6 ,21 ,23 ,12 ,17 ,-23},
-		{-27 ,-2 ,-5 ,12 ,17 ,6 ,10 ,-25},
-		{-26 ,-4 ,-4 ,-10 ,3 ,3 ,33 ,-12},
-		{-35 ,-1 ,-20 ,-23 ,-15 ,24 ,38 ,-22},
-		{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
-	};
-		int[,] eg_rook_table = {
-		{13, 10, 18, 15, 12, 12, 8, 5},
-		{11, 13, 13, 11, -3, 3, 8, 3},
-		{7, 7, 7, 5, 4, -3, -5, -3},
-		{4, 3, 13, 1, 2, 1, -1, 2},
-		{3, 5, 8, 4, -5, -6, -8,-11},
-		{-4,0,-5,-1,-7,-12,-8,-16},
-		{-6,-6,0 ,2 ,-9 ,-9 ,-11,-3 },
-		{-9 ,2 ,3 ,-1 ,-5 ,-13 ,4 ,-20}
-	};
-		int[,] mg_king_table = {
-		{-65,23,16,-15,-56,-34,2,13},
-		{29,-1,-20,-7,-8,-4,-38,-29},
-		{-9,24,2,-16,-20,6,22,-22},
-		{-17,-20,-12,-27,-30,-25,-14,-36},
-		{-49,-1,-27,-39,-46,-44,-33,-51},
-		{-14,-14,-22,-46,-44,-30,-15,-27},
-		{1,7,-8,-64,-43,-16,9,8},
-		{-15,36,12,-54,8,-28,24,14}
-	};
-		int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
-
-		int[,] eg_pawn_table = {
-		{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 },
-		{178 ,173 ,158 ,134 ,147 ,132 ,165 ,187 },
-		{94 ,100 ,85 ,67 ,56 ,53 ,82 ,84 },
-		{32 ,24 ,13 ,5 ,-2 ,4 ,17 ,17 },
-		{13 ,9 ,-3 ,-7 ,-7 ,-8 ,3 ,-1 },
-		{4 ,7 ,-6 ,1 ,0 ,-5 ,-1 ,-8 },
-		{13 ,8 ,8 ,10 ,13 ,0 ,2 ,-7 },
-		{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 }
-	};
-
-
+				Console.WriteLine($"table for piecetype {i}");
+				string builder = "";
+				for (int j = 0; j < 64; j++)
+				{
+					builder += " " + UnpackedPestoTables[j][i];
+					if (j % 8 == 7)
+					{ 
+						Console.WriteLine(builder); 
+						builder = "";
+					}
+				}
+			}
+		}*/
 
 
 		bool playerColor;
 		bool timeToStop = false;
-		ChessChallenge.API.Timer timer;
+		Timer timer;
 		/// <summary>
 		/// if under this miliseconds remaing, then should stop.
 		/// </summary>
 		int endMiliseconds = 0;
 		public Move Think(Board board, ChessChallenge.API.Timer _timer)
 		{
-			Console.WriteLine("-----My bot thinking----");
-			//killerMoves.Clear();
+			if (board.GameMoveHistory.Length < 2)
+			{
+				ExampleEvaluation();
+				//printtables();
+			}
+			Console.WriteLine("-----My bot thinking----");//#DEBUG
+														  //killerMoves.Clear();
 			timer = _timer;
 			historyTable = new int[2, 7, 64];
-			playerColor = board.IsWhiteToMove;
 			endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining * 29 / 30);
 			timeToStop = false;
-			return bestMove(board, board.IsWhiteToMove);
-		}
-		int[] pieceValues = { 82, 337, 365, 477, 1025, 0 };
-		int[] endGameValues = { 94, 281, 297, 512, 936, 0 };
-
-		Move overAllBestMove;
-		Move bestMove(Board board, bool playerToMove)
-		{
-			lookups = 0;
-			entryCount = 0;
-			counters.Add(0);
-			int color = playerToMove ? 1 : -1;
-			int bestEval = 0;
-			int thinkStart = timer.MillisecondsRemaining;
+			lookups = 0; //#DEBUG
+			entryCount = 0; //#DEBUG
+			counters.Add(0);//#DEBUG
+			int bestEval = 0; //#DEBUG
+			int thinkStart = timer.MillisecondsRemaining; //#DEBUG
 			for (sbyte d = 1; d <= 32; d++)
 			{
 				if (timeToStop) break;
-				startime = timer.MillisecondsRemaining;
+				startime = timer.MillisecondsRemaining; //#DEBUG
 
-				bestEval = -negamax(board, d, 0, -10000000, 10000000, color);
-				Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");
-				Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");
+				bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
+				Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+				Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
 			}
-			Console.WriteLine("info string -------node count------- " + counters[^1]);
-			Console.WriteLine("info string useful lookups:  " + lookups);
-			Console.WriteLine("info string Entry count " + entryCount);
-			Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");
-			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");
+
+			Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+			Console.WriteLine("info string useful lookups:  " + lookups);//#DEBUG
+			Console.WriteLine("info string Entry count " + entryCount);//#DEBUG
+			Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
 			if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
 			return overAllBestMove;
 		}
+		private readonly short[] PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
+                                             94, 281, 297, 512, 936, 0}; // Endgame
+		Move overAllBestMove;
 
 
 
@@ -162,17 +117,18 @@ namespace ChessChallenge.Example
 			int score = 0;
 			if (move == goodMove) score = 100000000;
 			// Give higher scores to captures and promotions
+			// Use MVV-LVA heuristic
 			if (move.IsCapture)
-			{
-				// Use MVV-LVA heuristic
-				score += 10 * pieceValues[(int)move.CapturePieceType - 1] - pieceValues[(int)move.MovePieceType - 1];
-			}
+				score += 10 * PieceValues[(int)move.CapturePieceType - 1] - PieceValues[(int)move.MovePieceType - 1];
+
 			if (move.IsPromotion)
 				score += 900;
 			//If this move has caused lots of cutoffs, let's put it higher.
 			score += historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index];
 			return score;
 		}
+		int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
+
 		int evaluation(Board board)
 		{
 			int eval = 0;
@@ -183,47 +139,24 @@ namespace ChessChallenge.Example
 				gamePhase -= piececount * phase_weight[i];
 			}
 			gamePhase = Math.Max(gamePhase, 0);
-			foreach (PieceList pieces in board.GetAllPieceLists())
-			{
-				int playerSign = pieces.IsWhitePieceList ? 1 : -1;
-				int openingEval = pieces.Count * pieceValues[(int)pieces.TypeOfPieceInList - 1];
-				int endgameEval = pieces.Count * endGameValues[(int)pieces.TypeOfPieceInList - 1];
-				foreach (Piece piece in pieces)
-				{
-					int rank = piece.IsWhite ? 7 - piece.Square.Rank : piece.Square.Rank;
-					int file = piece.Square.File;
 
-					switch (piece.PieceType)
-					{
-						case PieceType.Pawn:
-							openingEval += mg_pawn_table[rank, file];
-							endgameEval += eg_pawn_table[rank, file];
-							break;
-						case PieceType.Knight:
-							openingEval += mg_knight_table[rank, file];
-							endgameEval += mg_knight_table[rank, file];
-							break;
-						case PieceType.Bishop:
-							openingEval += mg_bishop_table[rank, file];
-							endgameEval += mg_bishop_table[rank, file];
-							break;
-						case PieceType.Queen:
-							openingEval += mg_queen_table[rank, file];
-							endgameEval += mg_queen_table[rank, file];
-							break;
-						case PieceType.Rook:
-							openingEval += mg_rook_table[rank, file];
-							endgameEval += eg_rook_table[rank, file];
-							break;
-						case PieceType.King:
-							openingEval += mg_king_table[rank, file];
-							endgameEval += mg_knight_table[rank, file];
-							break;
-					}
+			foreach (PieceList pList in board.GetAllPieceLists())
+			{
+
+				int openingEval = 0;
+				int endgameEval = 0;
+				foreach (Piece piece in pList)
+				{
+					int pieceType = (int)piece.PieceType - 1;
+					int pieceIndex = pList.IsWhitePieceList ? 63 - piece.Square.Index : piece.Square.Index;
+					openingEval += UnpackedPestoTables[pieceIndex][pieceType];
+					endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
+
 				}
-				eval += ((openingEval * (24 - gamePhase)) + (endgameEval * gamePhase)) / 24 * playerSign;
+				eval += (openingEval * (24 - gamePhase) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
 
 			}
+
 			return eval;
 		}
 
@@ -261,21 +194,34 @@ namespace ChessChallenge.Example
 		/// <returns></returns>
 		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 		{
-			bool isInCheck = board.IsInCheck();
-			bool notRoot = ply > 0;
+			depth = Math.Max(depth, (sbyte)0);
+
+			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
+																//Much used variables
 			bool isPV = beta - alpha > 1;
-			//return early statements.
+			bool notRoot = ply > 0;
+			bool isInCheck = board.IsInCheck();
+
+			//Draw detection
+			if (notRoot && board.IsDraw())
+				return 0;
 			if (board.IsInCheckmate())
 				return ply - 999999;
-			counters[^1]++;
-			if (notRoot && (board.IsDraw()))
-				return 0;
+
+			//Debug
+			counters[^1]++; //#DEBUG
+
+
+
+			//check extensions - MUST BE BEFORE QSEARCH	
 			if (isInCheck)
-				depth = (depth < 0) ? (sbyte)1 : (sbyte)(depth + 1);
+				depth++;
+
+			//QSearch
 			bool isQSearch = depth <= 0;
 			if (isQSearch)
 			{
-				int standingPat = board.IsInCheck() ? -998999 : color * evaluation(board);
+				int standingPat = isInCheck ? -998999 : color * evaluation(board);
 
 				if (standingPat >= beta)
 				{
@@ -298,10 +244,8 @@ namespace ChessChallenge.Example
 				if (score >= beta)
 					return beta;
 			}
-
-			ulong zobristHash = board.ZobristKey;
 			// Transposition table lookup
-
+			ulong zobristHash = board.ZobristKey;
 			ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
 			Move bestMove = Move.NullMove;
 			if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
@@ -316,11 +260,13 @@ namespace ChessChallenge.Example
 				bestMove = transposition.move;
 			}
 
-			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");
+			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 			// Generate legal moves and sort them
-			Move[] legalmoves = board.GetLegalMoves(isQSearch);
 			Move goodMove = notRoot ? bestMove : overAllBestMove;
+
+			// Gamestate, checkmate and draws - THIS PLACEMENT HASN'T BEEN TESTED - EARLIER IT WAS BEFORE QSEARCH - THIS PLACEMENT IS RUNNING TEST
+			Move[] legalmoves = board.GetLegalMoves(isQSearch);
 			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
 			// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 			Move bestFoundMove = Move.NullMove;
@@ -358,17 +304,18 @@ namespace ChessChallenge.Example
 				else
 				{
 					// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-					int reduction = (int)((depth >= 4 && moveCount >= 4 && !board.IsInCheck() && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+					int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 					//reduction = isPV && reduction > 0 ? 1 : 0;
-
+					//local search function to save tokens.
+					int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
 					int eval;
 					if (moveCount == 1)
-						eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -beta, -alpha, -color);
+						eval = search(reduction, beta);
 					else
 					{
-						eval = -negamax(board, (sbyte)(depth - 1 - reduction), ply + 1, -alpha - 1, -alpha, -color);
+						eval = search(reduction, alpha + 1); //should be +, because it will be negated in the search method.
 						if (eval > alpha || (reduction > 0 && beta > eval))
-							eval = -negamax(board, (sbyte)(depth - 1), ply + 1, -beta, -alpha, -color);
+							eval = search(0, beta);
 					}
 
 					if (eval > max)
@@ -377,7 +324,7 @@ namespace ChessChallenge.Example
 						if (ply == 0 && !timeToStop)
 						{
 							overAllBestMove = move;
-							Console.WriteLine($"info string new Overall Best move: {move}");
+							Console.WriteLine($"info string new Overall Best move: {move}");//#DEBUG
 						}
 						bestFoundMove = move;
 						max = eval;
@@ -402,7 +349,7 @@ namespace ChessChallenge.Example
 
 		void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
 		{
-			entryCount++;
+			entryCount++; //#DEBUG
 
 			// Transposition table store
 			transposition.evaluation = bestEvaluation;

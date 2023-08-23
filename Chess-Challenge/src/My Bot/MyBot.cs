@@ -40,7 +40,7 @@ public class MyBot : IChessBot
 		}).ToArray();
 	}
 	
-	void printtables()
+	/*void printtables()
 	{
 		Console.WriteLine(UnpackedPestoTables.ToString());
 		for(int i = 0; i < 12; i++)
@@ -58,12 +58,12 @@ public class MyBot : IChessBot
 				}
 			}
 		}
-	}
+	}*/
 
 
 	bool playerColor;
 	bool timeToStop = false;
-	ChessChallenge.API.Timer timer;
+	Timer timer;
 	/// <summary>
 	/// if under this miliseconds remaing, then should stop.
 	/// </summary>
@@ -73,7 +73,7 @@ public class MyBot : IChessBot
 		if (board.GameMoveHistory.Length < 2)
 		{
 			ExampleEvaluation(); 
-			printtables();
+			//printtables();
 		}
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
 		//killerMoves.Clear();
@@ -89,7 +89,7 @@ public class MyBot : IChessBot
 		for (sbyte d = 1; d <= 32; d++)
 		{
 			if (timeToStop) break;
-			startime = timer.MillisecondsRemaining;
+			startime = timer.MillisecondsRemaining; //#DEBUG
 
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
@@ -151,11 +151,10 @@ public class MyBot : IChessBot
 				int pieceType = (int)piece.PieceType - 1;
 				int pieceIndex = pList.IsWhitePieceList ? 63 - piece.Square.Index : piece.Square.Index;
 				openingEval += UnpackedPestoTables[pieceIndex][pieceType];
-				int a = pieceType + 6;
-				endgameEval += UnpackedPestoTables[pieceIndex][a];
+				endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
 
 			}
-			eval += ((openingEval * (24 - gamePhase)) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
+			eval += (openingEval * (24 - gamePhase) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
 
 		}
 
