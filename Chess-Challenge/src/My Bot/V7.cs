@@ -4,13 +4,9 @@ using System;
 using System.Linq;
 
 /// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
+/// now start of compressed era.
 /// </summary>
-public class MyBot : IChessBot
+public class V7 : IChessBot
 {
 
 	List<int> counters = new List<int>(); //#DEBUG
