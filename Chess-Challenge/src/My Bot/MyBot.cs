@@ -166,7 +166,7 @@ public class MyBot : IChessBot
 
 
 	// Create a transposition table // key, move, score/eval, depth, flag.
-	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x800000];
+	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 	// Define a data structure to store killer moves
 	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 	/// <summary>
@@ -232,7 +232,7 @@ public class MyBot : IChessBot
 		}
 		// Transposition table lookup
 		ulong zobristHash = board.ZobristKey;
-		ref var entry = ref transpositionTable[zobristHash & 0x7FFFFF];
+		ref var entry = ref transpositionTable[zobristHash & 0x3FFFFF];
 		int entryScore = entry.Item3, entryFlag = entry.Item5;
 
 		Move bestMove = Move.NullMove;

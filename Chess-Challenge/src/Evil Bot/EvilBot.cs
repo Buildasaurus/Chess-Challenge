@@ -12,7 +12,7 @@ namespace ChessChallenge.Example
 	public class EvilBot : IChessBot
 	{
 
-		List<int> counters = new List<int>();
+		List<int> counters = new List<int>(); //#DEBUG
 
 		private readonly decimal[] PackedPestoTables = {
 			63746705523041458768562654720m, 71818693703096985528394040064m, 75532537544690978830456252672m, 75536154932036771593352371712m, 76774085526445040292133284352m, 3110608541636285947269332480m, 936945638387574698250991104m, 75531285965747665584902616832m,
@@ -26,18 +26,7 @@ namespace ChessChallenge.Example
 		};
 		int[][] UnpackedPestoTables;
 
-		// Constructor unpacks the tables and "bakes in" the piece values to use in your evaluation
-		void ExampleEvaluation()
-		{
-			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
-			{
-				int pieceType = 0;
-				return decimal.GetBits(packedTable).Take(3)
-					.SelectMany(c => BitConverter.GetBytes(c)
-						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
-					.ToArray();
-			}).ToArray();
-		}
+
 
 		/*void printtables()
 		{
@@ -60,20 +49,26 @@ namespace ChessChallenge.Example
 		}*/
 
 
-		bool playerColor;
 		bool timeToStop = false;
-		Timer timer;
+		ChessChallenge.API.Timer timer;
 		/// <summary>
 		/// if under this miliseconds remaing, then should stop.
 		/// </summary>
-		int endMiliseconds = 0;
+		int endMiliseconds;
 		public Move Think(Board board, ChessChallenge.API.Timer _timer)
 		{
 			if (board.GameMoveHistory.Length < 2)
 			{
-				ExampleEvaluation();
-				//printtables();
-			}
+				UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
+				{
+					int pieceType = 0;
+					return decimal.GetBits(packedTable).Take(3)
+						.SelectMany(c => BitConverter.GetBytes(c)
+							.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
+						.ToArray();
+				}).ToArray();
+			};
+
 			Console.WriteLine("-----My bot thinking----");//#DEBUG
 														  //killerMoves.Clear();
 			timer = _timer;
@@ -133,10 +128,10 @@ namespace ChessChallenge.Example
 		{
 			int eval = 0;
 			int gamePhase = 24;
-			for (int i = 0; i < 5; i++)
+			for (int i = 1; i < 6; i++)
 			{
-				int piececount = board.GetPieceList((PieceType)(i + 1), false).Count + board.GetPieceList((PieceType)(i + 1), true).Count;
-				gamePhase -= piececount * phase_weight[i];
+				int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
+				gamePhase -= piececount * phase_weight[i - 1];
 			}
 			gamePhase = Math.Max(gamePhase, 0);
 
@@ -164,21 +159,13 @@ namespace ChessChallenge.Example
 		// History table definition
 		int[,,] historyTable;
 		// Define a structure to store transposition table entries
-		struct Transposition
-		{
-			public ulong zobristHash;
-			public Move move;
-			public int evaluation;
-			public sbyte depth;
-			public byte flag;
-		};
-		int lookups = 0;
-		int entryCount = 0;
-		int startime;
+		int lookups = 0; //DEBUG
+		int entryCount = 0;//DEBUG
+		int startime;//DEBUG
 
 
-		// Create a transposition table
-		Transposition[] transpositionTable = new Transposition[0x800000];
+		// Create a transposition table // key, move, score/eval, depth, flag.
+		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x800000];
 		// Define a data structure to store killer moves
 		//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 		/// <summary>
@@ -195,7 +182,7 @@ namespace ChessChallenge.Example
 		int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 		{
 			depth = Math.Max(depth, (sbyte)0);
-
+			int oldAlpha = alpha;
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																//Much used variables
 			bool isPV = beta - alpha > 1;
@@ -224,14 +211,12 @@ namespace ChessChallenge.Example
 				int standingPat = isInCheck ? -998999 : color * evaluation(board);
 
 				if (standingPat >= beta)
-				{
 					return beta;
-				}
+
 
 				if (alpha < standingPat)
-				{
 					alpha = standingPat;
-				}
+
 			}
 
 			// Null move pruning - is perhaps best with more time on the clock?
@@ -246,19 +231,25 @@ namespace ChessChallenge.Example
 			}
 			// Transposition table lookup
 			ulong zobristHash = board.ZobristKey;
-			ref Transposition transposition = ref transpositionTable[zobristHash & 0x7FFFFF];
+			ref var entry = ref transpositionTable[zobristHash & 0x7FFFFF];
+			int entryScore = entry.Item3, entryFlag = entry.Item5;
+
 			Move bestMove = Move.NullMove;
-			if (transposition.zobristHash == zobristHash && transposition.depth >= depth)
+			//If we have an "exact" score (a < score < beta) just use that
+			//If we have a lower bound better than beta, use that
+			//If we have an upper bound worse than alpha, use that
+			if (notRoot && entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
+					// Exact
+					entryFlag == 1 ||
+					// Upperbound
+					entryFlag == 2 && entryScore <= alpha ||
+					// Lowerbound
+					entryFlag == 3 && entryScore >= beta))
 			{
 				lookups++;
-				//If we have an "exact" score (a < score < beta) just use that
-				//If we have a lower bound better than beta, use that
-				//If we have an upper bound worse than alpha, use that
-				if ((transposition.flag == 1) ||
-					(transposition.flag == 2 && transposition.evaluation >= beta) ||
-					(transposition.flag == 3 && transposition.evaluation <= alpha)) return transposition.evaluation;
-				bestMove = transposition.move;
+				return entryScore;
 			}
+
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
@@ -296,10 +287,7 @@ namespace ChessChallenge.Example
 					{
 						return beta;
 					}
-					if (score > alpha)
-					{
-						alpha = score;
-					}
+					alpha = Math.Max(alpha, score);
 				}
 				else
 				{
@@ -341,29 +329,18 @@ namespace ChessChallenge.Example
 			}
 
 			if (isQSearch) return alpha;
-			storeEntry(ref transposition, depth, alpha, beta, max, bestFoundMove, zobristHash);
-			return max;
-		}
-
-
-
-		void storeEntry(ref Transposition transposition, sbyte depth, int alpha, int beta, int bestEvaluation, Move bestMove, ulong zobristHash)
-		{
-			entryCount++; //#DEBUG
 
 			// Transposition table store
-			transposition.evaluation = bestEvaluation;
-			transposition.zobristHash = zobristHash;
-			transposition.move = bestMove;
-			if (bestEvaluation > alpha)
-				transposition.flag = 1; //"exact" score
-			else if (bestEvaluation >= beta)
-			{
-				transposition.flag = 2; //lower bound
-			}
-			else
-				transposition.flag = 3; //upper bound
-			transposition.depth = (sbyte)depth;
+			entryCount++; //#DEBUG
+						  // Transposition table insertion
+			entry = new(
+				zobristHash,
+				bestFoundMove == default ? entry.Item2 : bestFoundMove,
+				max,
+				depth,
+				(byte)(max >= beta ? 3 : max <= oldAlpha ? 2 : 1));
+
+			return max;
 		}
 	}
 }
