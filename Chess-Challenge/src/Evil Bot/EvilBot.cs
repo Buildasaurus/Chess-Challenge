@@ -163,6 +163,7 @@ namespace ChessChallenge.Example
 		int entryCount = 0;//DEBUG
 		int startime;//DEBUG
 
+		private readonly int[] moveScores = new int[218];
 
 		// Create a transposition table // key, move, score/eval, depth, flag.
 		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
@@ -256,9 +257,22 @@ namespace ChessChallenge.Example
 			// Generate legal moves and sort them
 			Move goodMove = notRoot ? bestMove : overAllBestMove;
 
-			// Gamestate, checkmate and draws - THIS PLACEMENT HASN'T BEEN TESTED - EARLIER IT WAS BEFORE QSEARCH - THIS PLACEMENT IS RUNNING TEST
-			Move[] legalmoves = board.GetLegalMoves(isQSearch);
-			Array.Sort(legalmoves, (a, b) => MoveOrderingHeuristic(b, board, goodMove).CompareTo(MoveOrderingHeuristic(a, board, goodMove)));
+			// Gamestate, checkmate and draws
+			Span<Move> legalmoves = stackalloc Move[218];
+			board.GetLegalMovesNonAlloc(ref legalmoves, isQSearch);
+			int movesScored = 0;
+
+			foreach (Move move in legalmoves)
+				moveScores[movesScored++] = -(
+				// Hash move
+				move == goodMove ? 9_000_000 :
+				// MVVLVA
+				move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
+				// History
+				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
+
+			moveScores.AsSpan(0, legalmoves.Length).Sort(legalmoves);
+
 			// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 			Move bestFoundMove = Move.NullMove;
 

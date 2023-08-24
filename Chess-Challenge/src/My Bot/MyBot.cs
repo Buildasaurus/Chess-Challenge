@@ -108,21 +108,7 @@ public class MyBot : IChessBot
 
 
 
-	int MoveOrderingHeuristic(Move move, Board board, Move goodMove)
-	{
-		int score = 0;
-		if (move == goodMove) score = 100000000;
-		// Give higher scores to captures and promotions
-		// Use MVV-LVA heuristic
-		if (move.IsCapture)
-			score += 10 * PieceValues[(int)move.CapturePieceType - 1] - PieceValues[(int)move.MovePieceType - 1];
 
-		if (move.IsPromotion)
-			score += 900;
-		//If this move has caused lots of cutoffs, let's put it higher.
-		score += historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index];
-		return score;
-	}
 	int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
 
 	int evaluation(Board board)
@@ -187,13 +173,11 @@ public class MyBot : IChessBot
 		int oldAlpha = alpha;
 		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 															//Much used variables
-		bool isPV = beta - alpha > 1;
-		bool notRoot = ply > 0;
-		bool isInCheck = board.IsInCheck();
+		bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
 
 		//Draw detection
 		if (notRoot && board.IsDraw())
-			return 0;
+			return 0; //slight discouragement of draws.
 		if (board.IsInCheckmate())
 			return ply - 999999;
 
@@ -266,7 +250,7 @@ public class MyBot : IChessBot
 		foreach (Move move in legalmoves)
 			moveScores[movesScored++] = -(
 			// Hash move
-			move == goodMove ? 9_000_000 :
+			move == goodMove ? 9_000_000 : move.IsPromotion ? 4_000_000 :
 			// MVVLVA
 			move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
 			// History
