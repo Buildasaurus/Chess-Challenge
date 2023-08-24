@@ -246,16 +246,16 @@ namespace ChessChallenge.Example
             board.GetLegalMovesNonAlloc(ref legalmoves, isQSearch);
             int movesScored = 0;
 
-            foreach (Move move in legalmoves)
-                moveScores[movesScored++] = -(
-                // Hash move
-                move == goodMove ? 9_000_000 : move.IsPromotion ? 4_000_000 :
-                // MVVLVA
-                move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
-                // History
-                historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
+			foreach (Move move in legalmoves)
+				moveScores[movesScored++] = -(
+				// Hash move
+				move == goodMove ? 9_000_000 :
+				// MVVLVA
+				move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
+				// History
+				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
 
-            moveScores.AsSpan(0, legalmoves.Length).Sort(legalmoves);
+			moveScores.AsSpan(0, legalmoves.Length).Sort(legalmoves);
 
             // if we are at root level, make sure that the overallbest move from earlier iterations is at top.
             Move bestFoundMove = Move.NullMove;

@@ -250,9 +250,9 @@ public class MyBot : IChessBot
 		foreach (Move move in legalmoves)
 			moveScores[movesScored++] = -(
 			// Hash move
-			move == goodMove ? 9_000_000 : 
+			move == goodMove ? 9_000_000 : move.IsPromotion ? 8_900_000 :
 			// MVVLVA
-			move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType : move.IsPromotion ? 900_000 :
+			move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType	:
 			// History
 			historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
 
