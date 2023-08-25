@@ -51,26 +51,22 @@ public class MyBot : IChessBot
 	// History table definition
 	int[,,] historyTable;
 	// Define a structure to store transposition table entries
-	int lookups = 0; //DEBUG
-	int entryCount = 0;//DEBUG
-	int startime;//DEBUG
+	int lookups = 0; //#DEBUG
+	int entryCount = 0;//#DEBUG
+	int startime;//#DEBUG
 
-	private readonly int[] moveScores = new int[218];
+	private readonly int[] moveScores = new int[218],  phase_weight = { 0, 1, 1, 2, 4, 0 },
+				PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
+									94, 281, 297, 512, 936, 0}; // Endgame
 
 	// Create a transposition table // key, move, score/eval, depth, flag.
 	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 
 	bool timeToStop = false;
-	private readonly short[] PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
-                                             94, 281, 297, 512, 936, 0}; // Endgame
-	int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
 
 	Move overAllBestMove;
 	ChessChallenge.API.Timer timer;
-	/// <summary>
-	/// if under this miliseconds remaing, then should stop.
-	/// </summary>
-	int endMiliseconds;
+	int timeForTurn;
 	public Move Think(Board board, ChessChallenge.API.Timer _timer)
 	{
 		if (board.GameMoveHistory.Length < 2)
@@ -87,7 +83,7 @@ public class MyBot : IChessBot
 													  //killerMoves.Clear();
 		timer = _timer;
 		historyTable = new int[2, 7, 64];
-		endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining * 29 / 30);
+		timeForTurn = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining / 30);
 		timeToStop = false;
 		lookups = 0; //#DEBUG
 		entryCount = 0; //#DEBUG
@@ -118,9 +114,6 @@ public class MyBot : IChessBot
 
 
 
-
-	//IDEA to reduce: do gamephase while finding eval of piecelists, then just have 4 variables, openeval white, black, and endeval white, black. 
-	//Then you can just keep adding to those, and only do the final eval when retuning, this means you can also calcualte gamephase in same loop.
 
 	int evaluation(Board board)
 	{
@@ -264,7 +257,7 @@ public class MyBot : IChessBot
 			moveCount++; // Increment the move counter
 
 			//Early stop at top level
-			if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
+			if (!timeToStop && timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
 			if (timeToStop)
 				return 0;
 
