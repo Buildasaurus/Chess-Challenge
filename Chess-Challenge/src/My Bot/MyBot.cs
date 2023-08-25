@@ -125,28 +125,31 @@ public class MyBot : IChessBot
 	int evaluation(Board board)
 	{
 		int eval = 0, gamePhase = 24;
-		for (int i = 1; i < 6; i++)
-		{
-			int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
-			gamePhase -= piececount * phase_weight[i - 1];
-		}
-		gamePhase = Math.Max(gamePhase, 0);
+		int openingEval = 0, endgameEval = 0;
 
 		foreach (PieceList pList in board.GetAllPieceLists())
 		{
-
-			int openingEval = 0, endgameEval = 0;
+			gamePhase -= pList.Count * phase_weight[(int)pList.TypeOfPieceInList - 1];
 			foreach (Piece piece in pList)
 			{
 				int pieceType = (int)piece.PieceType - 1;
-				int pieceIndex = pList.IsWhitePieceList ? 63 - piece.Square.Index : piece.Square.Index;
-				openingEval += UnpackedPestoTables[pieceIndex][pieceType];
-				endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
-
+				int pieceIndex = piece.Square.Index;
+				if (pList.IsWhitePieceList)
+				{
+					pieceIndex = 63 - piece.Square.Index;
+					openingEval += UnpackedPestoTables[pieceIndex][pieceType];
+					endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
+				}
+				else
+				{
+					openingEval -= UnpackedPestoTables[pieceIndex][pieceType];
+					endgameEval -= UnpackedPestoTables[pieceIndex][pieceType + 6];
+				}
 			}
-			eval += (openingEval * (24 - gamePhase) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
 
 		}
+		gamePhase = Math.Max(gamePhase, 0);
+		eval += (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
 
 		return eval;
 	}
@@ -169,7 +172,7 @@ public class MyBot : IChessBot
 		//start searching
 
 		int oldAlpha = alpha, R = 2, movesScored = 0, moveCount = 0, max = -100000000;
-		
+
 		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 															//Much used variables
 		bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
@@ -249,7 +252,7 @@ public class MyBot : IChessBot
 			// Hash move
 			move == goodMove ? 9_000_000 :
 			// MVVLVA
-			move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType	:
+			move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
 			// History
 			historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
 
