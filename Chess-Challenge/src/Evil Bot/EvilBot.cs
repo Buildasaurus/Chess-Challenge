@@ -50,26 +50,22 @@ namespace ChessChallenge.Example
 		// History table definition
 		int[,,] historyTable;
 		// Define a structure to store transposition table entries
-		int lookups = 0; //DEBUG
-		int entryCount = 0;//DEBUG
-		int startime;//DEBUG
+		int lookups = 0; //#DEBUG
+		int entryCount = 0;//#DEBUG
+		int startime;//#DEBUG
 
-		private readonly int[] moveScores = new int[218];
+		private readonly int[] moveScores = new int[218], phase_weight = { 0, 1, 1, 2, 4, 0 },
+					PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
+									94, 281, 297, 512, 936, 0}; // Endgame
 
 		// Create a transposition table // key, move, score/eval, depth, flag.
 		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 
 		bool timeToStop = false;
-		private readonly short[] PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
-                                             94, 281, 297, 512, 936, 0}; // Endgame
-		int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
 
 		Move overAllBestMove;
 		ChessChallenge.API.Timer timer;
-		/// <summary>
-		/// if under this miliseconds remaing, then should stop.
-		/// </summary>
-		int endMiliseconds;
+		int timeForTurn;
 		public Move Think(Board board, ChessChallenge.API.Timer _timer)
 		{
 			if (board.GameMoveHistory.Length < 2)
@@ -86,7 +82,7 @@ namespace ChessChallenge.Example
 														  //killerMoves.Clear();
 			timer = _timer;
 			historyTable = new int[2, 7, 64];
-			endMiliseconds = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining * 29 / 30);
+			timeForTurn = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining / 30);
 			timeToStop = false;
 			lookups = 0; //#DEBUG
 			entryCount = 0; //#DEBUG
@@ -118,34 +114,34 @@ namespace ChessChallenge.Example
 
 
 
-		//IDEA to reduce: do gamephase while finding eval of piecelists, then just have 4 variables, openeval white, black, and endeval white, black. 
-		//Then you can just keep adding to those, and only do the final eval when retuning, this means you can also calcualte gamephase in same loop.
-
 		int evaluation(Board board)
 		{
 			int eval = 0, gamePhase = 24;
-			for (int i = 1; i < 6; i++)
-			{
-				int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
-				gamePhase -= piececount * phase_weight[i - 1];
-			}
-			gamePhase = Math.Max(gamePhase, 0);
+			int openingEval = 0, endgameEval = 0;
 
 			foreach (PieceList pList in board.GetAllPieceLists())
 			{
-
-				int openingEval = 0, endgameEval = 0;
+				gamePhase -= pList.Count * phase_weight[(int)pList.TypeOfPieceInList - 1];
 				foreach (Piece piece in pList)
 				{
 					int pieceType = (int)piece.PieceType - 1;
-					int pieceIndex = pList.IsWhitePieceList ? 63 - piece.Square.Index : piece.Square.Index;
-					openingEval += UnpackedPestoTables[pieceIndex][pieceType];
-					endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
-
+					int pieceIndex = piece.Square.Index;
+					if (pList.IsWhitePieceList)
+					{
+						pieceIndex = 63 - piece.Square.Index;
+						openingEval += UnpackedPestoTables[pieceIndex][pieceType];
+						endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
+					}
+					else
+					{
+						openingEval -= UnpackedPestoTables[pieceIndex][pieceType];
+						endgameEval -= UnpackedPestoTables[pieceIndex][pieceType + 6];
+					}
 				}
-				eval += (openingEval * (24 - gamePhase) + (endgameEval * gamePhase)) / 24 * (pList.IsWhitePieceList ? 1 : -1);
 
 			}
+			gamePhase = Math.Max(gamePhase, 0);
+			eval += (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
 
 			return eval;
 		}
@@ -260,7 +256,7 @@ namespace ChessChallenge.Example
 				moveCount++; // Increment the move counter
 
 				//Early stop at top level
-				if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
+				if (!timeToStop && timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
 				if (timeToStop)
 					return 0;
 
