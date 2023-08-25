@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Drawing;
 
 /// <summary>
 /// 
@@ -117,34 +118,26 @@ public class MyBot : IChessBot
 
 	int evaluation(Board board)
 	{
-		int eval = 0, gamePhase = 24;
-		int openingEval = 0, endgameEval = 0;
+		int gamePhase = 24, openingEval = 0, endgameEval = 0;
 
 		foreach (PieceList pList in board.GetAllPieceLists())
 		{
 			gamePhase -= pList.Count * phase_weight[(int)pList.TypeOfPieceInList - 1];
+			int color = pList.IsWhitePieceList ? 1 : -1;
 			foreach (Piece piece in pList)
 			{
 				int pieceType = (int)piece.PieceType - 1;
 				int pieceIndex = piece.Square.Index;
 				if (pList.IsWhitePieceList)
-				{
 					pieceIndex = 63 - piece.Square.Index;
-					openingEval += UnpackedPestoTables[pieceIndex][pieceType];
-					endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6];
-				}
-				else
-				{
-					openingEval -= UnpackedPestoTables[pieceIndex][pieceType];
-					endgameEval -= UnpackedPestoTables[pieceIndex][pieceType + 6];
-				}
+				openingEval += UnpackedPestoTables[pieceIndex][pieceType] * color;
+				endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6] * color;
 			}
 
 		}
 		gamePhase = Math.Max(gamePhase, 0);
-		eval += (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
 
-		return eval;
+		return (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
 	}
 
 
@@ -193,10 +186,8 @@ public class MyBot : IChessBot
 
 			if (standingPat >= beta)
 				return beta;
+			alpha = Math.Max(alpha, standingPat);
 
-
-			if (alpha < standingPat)
-				alpha = standingPat;
 
 		}
 
@@ -262,10 +253,11 @@ public class MyBot : IChessBot
 				return 0;
 
 			board.MakeMove(move);
+			int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
 
 			if (isQSearch)
 			{
-				int score = -negamax(board, 0, ply + 1, -beta, -alpha, -color);
+				int score = search(depth - 1, beta);
 				board.UndoMove(move);
 
 				if (score >= beta)
@@ -278,7 +270,6 @@ public class MyBot : IChessBot
 				int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 				//local search function to save tokens.
-				int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
 				int eval;
 				if (moveCount == 1)
 					eval = search(reduction, beta);
