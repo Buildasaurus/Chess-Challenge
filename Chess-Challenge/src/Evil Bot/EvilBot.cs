@@ -180,13 +180,11 @@ namespace ChessChallenge.Example
 			bool isQSearch = depth <= 0;
 			if (isQSearch)
 			{
-				int standingPat = isInCheck ? -998999 : color * evaluation(board);
+				int standingpat = color * evaluation(board);
 
-				if (standingPat >= beta)
+				if (standingpat >= beta)
 					return beta;
-				alpha = Math.Max(alpha, standingPat);
-
-
+				alpha = Math.Max(alpha, standingpat);
 			}
 
 			// Null move pruning - is perhaps best with more time on the clock?
@@ -264,11 +262,11 @@ namespace ChessChallenge.Example
 				}
 				else
 				{
-					// LMR: reduce the depth of the search for moves beyond a certain move count threshold
-					int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
+					int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0), eval;
 					//reduction = isPV && reduction > 0 ? 1 : 0;
 					//local search function to save tokens.
-					int eval;
+
 					if (moveCount == 1)
 						eval = search(reduction, beta);
 					else
