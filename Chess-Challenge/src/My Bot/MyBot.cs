@@ -281,7 +281,7 @@ public class MyBot : IChessBot
 
 				if (eval > max)
 				{
-					//if root level new best move is found, then save it to be played or for next iteration
+					//if root level new best move is found, then save it to be played or for next iteration 
 					if (ply == 0 && !timeToStop)
 					{
 						overAllBestMove = move;
