@@ -181,11 +181,11 @@ public class MyBot : IChessBot
 		bool isQSearch = depth <= 0;
 		if (isQSearch)
 		{
-			int standingpat = color * evaluation(board); 
+			max = color * evaluation(board); 
 
-			if (standingpat >= beta)
-				return beta;
-			alpha = Math.Max(alpha, standingpat);
+			if (max >= beta)
+				return max;
+			alpha = Math.Max(alpha, max);
 		}
 
 		// Null move pruning - is perhaps best with more time on the clock?
@@ -195,7 +195,7 @@ public class MyBot : IChessBot
 			int score = -negamax(board, (sbyte)(depth - R - 1), ply + 1, -beta, -alpha, -color);
 			board.UndoSkipTurn();
 			if (score >= beta)
-				return beta;
+				return score;
 		}
 		// Transposition table lookup
 		ulong zobristHash = board.ZobristKey;
@@ -242,6 +242,7 @@ public class MyBot : IChessBot
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 		foreach (Move move in legalmoves)
 		{
+			int eval;
 			moveCount++; // Increment the move counter
 
 			//Early stop at top level
@@ -251,20 +252,21 @@ public class MyBot : IChessBot
 
 			board.MakeMove(move);
 			int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
-
 			if (isQSearch)
 			{
-				int score = search(depth - 1, beta);
+				int score = search(depth, beta);
 				board.UndoMove(move);
+				max = Math.Max(score, max);
+			
 
-				if (score >= beta)
-					return beta;
-				alpha = Math.Max(alpha, score);
+				if (max >= beta)
+					break;
+				alpha = Math.Max(alpha, max);
 			}
 			else
 			{
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
-				int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0), eval;
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 				//local search function to save tokens.
 
@@ -299,7 +301,6 @@ public class MyBot : IChessBot
 			}
 		}
 
-		if (isQSearch) return alpha;
 
 		// Transposition table store
 		entryCount++; //#DEBUG
