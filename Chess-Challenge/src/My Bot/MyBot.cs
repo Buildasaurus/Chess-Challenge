@@ -48,9 +48,24 @@ public class MyBot : IChessBot
 			}
 		}
 	}*/
+	// History table definition
+	int[,,] historyTable;
+	// Define a structure to store transposition table entries
+	int lookups = 0; //DEBUG
+	int entryCount = 0;//DEBUG
+	int startime;//DEBUG
 
+	private readonly int[] moveScores = new int[218];
+
+	// Create a transposition table // key, move, score/eval, depth, flag.
+	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 
 	bool timeToStop = false;
+	private readonly short[] PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
+                                             94, 281, 297, 512, 936, 0}; // Endgame
+	int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
+
+	Move overAllBestMove;
 	ChessChallenge.API.Timer timer;
 	/// <summary>
 	/// if under this miliseconds remaing, then should stop.
@@ -59,7 +74,6 @@ public class MyBot : IChessBot
 	public Move Think(Board board, ChessChallenge.API.Timer _timer)
 	{
 		if (board.GameMoveHistory.Length < 2)
-		{
 			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 			{
 				int pieceType = 0;
@@ -68,7 +82,6 @@ public class MyBot : IChessBot
 						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
 					.ToArray();
 			}).ToArray();
-		};
 
 		Console.WriteLine("-----My bot thinking----");//#DEBUG
 													  //killerMoves.Clear();
@@ -102,19 +115,16 @@ public class MyBot : IChessBot
 
 		return overAllBestMove;
 	}
-	private readonly short[] PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
-                                             94, 281, 297, 512, 936, 0}; // Endgame
-	Move overAllBestMove;
 
 
 
 
-	int[] phase_weight = { 0, 1, 1, 2, 4, 0 };
+	//IDEA to reduce: do gamephase while finding eval of piecelists, then just have 4 variables, openeval white, black, and endeval white, black. 
+	//Then you can just keep adding to those, and only do the final eval when retuning, this means you can also calcualte gamephase in same loop.
 
 	int evaluation(Board board)
 	{
-		int eval = 0;
-		int gamePhase = 24;
+		int eval = 0, gamePhase = 24;
 		for (int i = 1; i < 6; i++)
 		{
 			int piececount = board.GetPieceList((PieceType)i, false).Count + board.GetPieceList((PieceType)i, true).Count;
@@ -125,8 +135,7 @@ public class MyBot : IChessBot
 		foreach (PieceList pList in board.GetAllPieceLists())
 		{
 
-			int openingEval = 0;
-			int endgameEval = 0;
+			int openingEval = 0, endgameEval = 0;
 			foreach (Piece piece in pList)
 			{
 				int pieceType = (int)piece.PieceType - 1;
@@ -143,19 +152,6 @@ public class MyBot : IChessBot
 	}
 
 
-	// History table definition
-	int[,,] historyTable;
-	// Define a structure to store transposition table entries
-	int lookups = 0; //DEBUG
-	int entryCount = 0;//DEBUG
-	int startime;//DEBUG
-
-	private readonly int[] moveScores = new int[218];
-
-	// Create a transposition table // key, move, score/eval, depth, flag.
-	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
-	// Define a data structure to store killer moves
-	//Dictionary<Move, int> killerMoves = new Dictionary<Move, int>();
 	/// <summary>
 	/// 
 	/// </summary>
@@ -170,7 +166,10 @@ public class MyBot : IChessBot
 	int negamax(Board board, sbyte depth, int ply, int alpha, int beta, int color)
 	{
 		depth = Math.Max(depth, (sbyte)0);
-		int oldAlpha = alpha;
+		//start searching
+
+		int oldAlpha = alpha, R = 2, movesScored = 0, moveCount = 0, max = -100000000;
+		
 		if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 															//Much used variables
 		bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
@@ -206,7 +205,6 @@ public class MyBot : IChessBot
 		}
 
 		// Null move pruning - is perhaps best with more time on the clock?
-		const int R = 2;
 		if (!isPV && !isInCheck && depth > R)
 		{
 			board.TrySkipTurn();
@@ -232,7 +230,7 @@ public class MyBot : IChessBot
 				// Lowerbound
 				entryFlag == 3 && entryScore >= beta))
 		{
-			lookups++;
+			lookups++; //#DEBUG
 			return entryScore;
 		}
 
@@ -240,12 +238,11 @@ public class MyBot : IChessBot
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 		// Generate legal moves and sort them
-		Move goodMove = notRoot ? bestMove : overAllBestMove;
+		Move goodMove = notRoot ? bestMove : overAllBestMove, bestFoundMove = Move.NullMove;
 
 		// Gamestate, checkmate and draws
 		Span<Move> legalmoves = stackalloc Move[218];
 		board.GetLegalMovesNonAlloc(ref legalmoves, isQSearch);
-		int movesScored = 0;
 
 		foreach (Move move in legalmoves)
 			moveScores[movesScored++] = -(
@@ -259,11 +256,6 @@ public class MyBot : IChessBot
 		moveScores.AsSpan(0, legalmoves.Length).Sort(legalmoves);
 
 		// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
-		Move bestFoundMove = Move.NullMove;
-
-		//start searching
-		int max = -100000000;
-		int moveCount = 0; // Add a move counter
 		foreach (Move move in legalmoves)
 		{
 			moveCount++; // Increment the move counter
@@ -271,9 +263,7 @@ public class MyBot : IChessBot
 			//Early stop at top level
 			if (!timeToStop && timer.MillisecondsRemaining < endMiliseconds) timeToStop = true;
 			if (timeToStop)
-			{
 				return 0;
-			}
 
 			board.MakeMove(move);
 
@@ -283,9 +273,7 @@ public class MyBot : IChessBot
 				board.UndoMove(move);
 
 				if (score >= beta)
-				{
 					return beta;
-				}
 				alpha = Math.Max(alpha, score);
 			}
 			else
