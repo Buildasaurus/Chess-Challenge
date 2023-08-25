@@ -1,0 +1,1 @@
+-PST, negamax, TT, QSearch, move ordering (MVV-LVA, history), ID, a/b pruning, tapered evaluation, NMP, Check extensions, LMR, PVS
