@@ -10,6 +10,7 @@ using System.Numerics;
 public class V8 : IChessBot
 {
 
+
 	List<int> counters = new List<int>(); //#DEBUG
 
 	private readonly decimal[] PackedPestoTables = {
@@ -178,7 +179,7 @@ public class V8 : IChessBot
 		bool isQSearch = depth <= 0;
 		if (isQSearch)
 		{
-			max = color * evaluation(board); 
+			max = color * evaluation(board);
 
 			if (max >= beta)
 				return max;
@@ -199,7 +200,6 @@ public class V8 : IChessBot
 		ref var entry = ref transpositionTable[zobristHash & 0x3FFFFF];
 		int entryScore = entry.Item3, entryFlag = entry.Item5;
 
-		Move bestMove = Move.NullMove;
 		//If we have an "exact" score (a < score < beta) just use that
 		//If we have a lower bound better than beta, use that
 		//If we have an upper bound worse than alpha, use that
@@ -219,7 +219,7 @@ public class V8 : IChessBot
 		if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 		// Generate legal moves and sort them
-		Move goodMove = notRoot ? bestMove : overAllBestMove, bestFoundMove = Move.NullMove;
+		Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = Move.NullMove;
 
 		// Gamestate, checkmate and draws
 		Span<Move> legalmoves = stackalloc Move[218];
@@ -256,7 +256,7 @@ public class V8 : IChessBot
 			else
 			{
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
-				int reduction = (int)((depth >= 4 && moveCount >= 4 && !isInCheck && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 				//local search function to save tokens.
 

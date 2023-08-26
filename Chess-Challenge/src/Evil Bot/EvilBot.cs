@@ -200,11 +200,9 @@ namespace ChessChallenge.Example
 			ref var entry = ref transpositionTable[zobristHash & 0x3FFFFF];
 			int entryScore = entry.Item3, entryFlag = entry.Item5;
 
-			Move bestMove = Move.NullMove;
 			//If we have an "exact" score (a < score < beta) just use that
 			//If we have a lower bound better than beta, use that
-			//If we have an upper bound worse than alpha, use that 
-			//TODO - ADD !pv FOR THIS
+			//If we have an upper bound worse than alpha, use that
 			if (notRoot && entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
 					// Exact
 					entryFlag == 1 ||
@@ -221,7 +219,7 @@ namespace ChessChallenge.Example
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 			// Generate legal moves and sort them
-			Move goodMove = notRoot ? bestMove : overAllBestMove, bestFoundMove = Move.NullMove;
+			Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = Move.NullMove;
 
 			// Gamestate, checkmate and draws
 			Span<Move> legalmoves = stackalloc Move[218];

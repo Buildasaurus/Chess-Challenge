@@ -303,7 +303,7 @@ public class MyBot : IChessBot
 		entry = new(
 			zobristHash,
 			bestFoundMove == default ? entry.Item2 : bestFoundMove,
-			max,
+			max,	
 			depth,
 			(byte)(max >= beta ? 3 : max <= oldAlpha ? 2 : 1));
 
