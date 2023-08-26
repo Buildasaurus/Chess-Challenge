@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Numerics;
 
 /// <summary>
 /// 
@@ -62,7 +63,7 @@ public class MyBot : IChessBot
 	// Create a transposition table // key, move, score/eval, depth, flag.
 	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 
-	bool timeToStop = false;
+	bool timeToStop;
 
 	Move overAllBestMove;
 	ChessChallenge.API.Timer timer;
@@ -98,6 +99,7 @@ public class MyBot : IChessBot
 			bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
+			Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 
 		}
 
@@ -107,36 +109,35 @@ public class MyBot : IChessBot
 		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 		Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
-		if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
+		//if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
 		return overAllBestMove;
 	}
 
 
 
-
+	//There are 3 tokens to save here, using fewer variables, and negating eval in each loop
 	int evaluation(Board board)
 	{
-		int gamePhase = 24, openingEval = 0, endgameEval = 0;
-
-		foreach (PieceList pList in board.GetAllPieceLists())
+		int middlegame = 0, endgame = 0, gamephase = 0, sideToMove = 2;
+		for (; --sideToMove >= 0;)
 		{
-			gamePhase -= pList.Count * phase_weight[(int)pList.TypeOfPieceInList - 1];
-			int color = pList.IsWhitePieceList ? 1 : -1;
-			foreach (Piece piece in pList)
-			{
-				int pieceType = (int)piece.PieceType - 1;
-				int pieceIndex = piece.Square.Index;
-				if (pList.IsWhitePieceList)
-					pieceIndex = 63 - piece.Square.Index;
-				openingEval += UnpackedPestoTables[pieceIndex][pieceType] * color;
-				endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6] * color;
-			}
+			for (int piece = -1, square; ++piece < 6;)
+				for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, sideToMove > 0); mask != 0;)
+				{
+					//gamephase goes from 0 to 24, 24 is midgame, 0 is endgame
+					gamephase += phase_weight[piece];
+					//Get index of first bit, which is index of the piece- Then XOR if it's white, to flip the board,
+					//cuz tables are opposite, so 0,0 isn't a1, but a8.
+					square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ 56 * sideToMove;
+					middlegame += UnpackedPestoTables[square][piece];
+					endgame += UnpackedPestoTables[square][piece + 6];
+				}
 
+			middlegame *= -1;
+			endgame *= -1;
 		}
-		gamePhase = Math.Max(gamePhase, 0);
-
-		return (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
+		return (middlegame * gamephase + endgame * (24 - gamephase)) / 24;
 	}
 
 

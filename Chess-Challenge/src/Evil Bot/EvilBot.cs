@@ -11,7 +11,6 @@ namespace ChessChallenge.Example
 
 	public class EvilBot : IChessBot
 	{
-
 		List<int> counters = new List<int>(); //#DEBUG
 
 		private readonly decimal[] PackedPestoTables = {
@@ -61,7 +60,7 @@ namespace ChessChallenge.Example
 		// Create a transposition table // key, move, score/eval, depth, flag.
 		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 
-		bool timeToStop = false;
+		bool timeToStop;
 
 		Move overAllBestMove;
 		ChessChallenge.API.Timer timer;
@@ -97,6 +96,7 @@ namespace ChessChallenge.Example
 				bestEval = -negamax(board, d, 0, -10000000, 10000000, board.IsWhiteToMove ? 1 : -1);
 				Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 				Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
+				Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 
 			}
 
@@ -106,35 +106,28 @@ namespace ChessChallenge.Example
 			Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 			Console.WriteLine($"info string Time used for completed search: {thinkStart - timer.MillisecondsRemaining} miliseconds");//#DEBUG
 
-			if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
+			//if (overAllBestMove == Move.NullMove) overAllBestMove = board.GetLegalMoves()[0]; // just in case there basically is no time.
 
 			return overAllBestMove;
 		}
 
 
 
-
+		//There are 3 tokens to save here, using fewer variables, and negating eval in each loop
 		int evaluation(Board board)
 		{
-			int gamePhase = 24, openingEval = 0, endgameEval = 0;
+			int gamePhase = 24, openingEval = 0, endgameEval = 0, i = 2, sideToMove = 1;
 
-			foreach (PieceList pList in board.GetAllPieceLists())
-			{
-				gamePhase -= pList.Count * phase_weight[(int)pList.TypeOfPieceInList - 1];
-				int color = pList.IsWhitePieceList ? 1 : -1;
-				foreach (Piece piece in pList)
-				{
-					int pieceType = (int)piece.PieceType - 1;
-					int pieceIndex = piece.Square.Index;
-					if (pList.IsWhitePieceList)
-						pieceIndex = 63 - piece.Square.Index;
-					openingEval += UnpackedPestoTables[pieceIndex][pieceType] * color;
-					endgameEval += UnpackedPestoTables[pieceIndex][pieceType + 6] * color;
-				}
+			for (; --i >= -1; i--, sideToMove--) // i is first 1, then -1.
+				for (int piece = -1, pieceIndex; ++piece < 6;)
+					for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, i > 0); mask != 0;)
+					{
 
-			}
-			gamePhase = Math.Max(gamePhase, 0);
-
+						gamePhase -= phase_weight[piece];
+						pieceIndex = BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ 56 * sideToMove;  //XORing is flipping the board
+						openingEval += UnpackedPestoTables[pieceIndex][piece] * i; //0 indexed
+						endgameEval += UnpackedPestoTables[pieceIndex][piece + 6] * i;
+					}
 			return (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
 		}
 
