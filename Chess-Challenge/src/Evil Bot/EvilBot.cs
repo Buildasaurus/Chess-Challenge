@@ -116,19 +116,25 @@ namespace ChessChallenge.Example
 		//There are 3 tokens to save here, using fewer variables, and negating eval in each loop
 		int evaluation(Board board)
 		{
-			int gamePhase = 24, openingEval = 0, endgameEval = 0, i = 2, sideToMove = 1;
-
-			for (; --i >= -1; i--, sideToMove--) // i is first 1, then -1.
-				for (int piece = -1, pieceIndex; ++piece < 6;)
-					for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, i > 0); mask != 0;)
+			int middlegame = 0, endgame = 0, gamephase = 0, sideToMove = 2;
+			for (; --sideToMove >= 0;)
+			{
+				for (int piece = -1, square; ++piece < 6;)
+					for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, sideToMove > 0); mask != 0;)
 					{
-
-						gamePhase -= phase_weight[piece];
-						pieceIndex = BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ 56 * sideToMove;  //XORing is flipping the board
-						openingEval += UnpackedPestoTables[pieceIndex][piece] * i; //0 indexed
-						endgameEval += UnpackedPestoTables[pieceIndex][piece + 6] * i;
+						//gamephase goes from 0 to 24, 24 is midgame, 0 is endgame
+						gamephase += phase_weight[piece];
+						//Get index of first bit, which is index of the piece- Then XOR if it's white, to flip the board,
+						//cuz tables are opposite, so 0,0 isn't a1, but a8.
+						square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ 56 * sideToMove;
+						middlegame += UnpackedPestoTables[square][piece];
+						endgame += UnpackedPestoTables[square][piece + 6];
 					}
-			return (openingEval * (24 - gamePhase) + endgameEval * gamePhase) / 24;
+
+				middlegame *= -1;
+				endgame *= -1;
+			}
+			return (middlegame * gamephase + endgame * (24 - gamephase)) / 24;
 		}
 
 
