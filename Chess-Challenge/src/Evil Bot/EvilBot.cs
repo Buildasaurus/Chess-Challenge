@@ -253,14 +253,7 @@ namespace ChessChallenge.Example
 				int search(int reductions, int betas) => -negamax(board, (sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha, -color);
 				if (isQSearch)
 				{
-					int score = search(depth, beta);
-					board.UndoMove(move);
-					max = Math.Max(score, max);
-
-
-					if (max >= beta)
-						break;
-					alpha = Math.Max(alpha, max);
+					eval = search(depth, beta);
 				}
 				else
 				{
@@ -278,25 +271,27 @@ namespace ChessChallenge.Example
 							eval = search(0, beta);
 					}
 
-					if (eval > max)
+
+				}
+				if (eval > max)
+				{
+					//if root level new best move is found, then save it to be played or for next iteration 
+					if (ply == 0 && !timeToStop)
 					{
-						//if root level new best move is found, then save it to be played or for next iteration 
-						if (ply == 0 && !timeToStop)
-						{
-							overAllBestMove = move;
-							Console.WriteLine($"info string new Overall Best move: {move}");//#DEBUG
-						}
-						bestFoundMove = move;
-						max = eval;
+						overAllBestMove = move;
+						Console.WriteLine($"info string new Overall Best move: {move}");//#DEBUG
 					}
-					board.UndoMove(move);
-					alpha = Math.Max(alpha, max);
-					if (alpha >= beta)
-					{
-						//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
-						historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
-						break;
-					}
+					bestFoundMove = move;
+					max = eval;
+				}
+				board.UndoMove(move);
+
+				alpha = Math.Max(alpha, max);
+				if (alpha >= beta)
+				{
+					//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
+					historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
+					break;
 				}
 			}
 
