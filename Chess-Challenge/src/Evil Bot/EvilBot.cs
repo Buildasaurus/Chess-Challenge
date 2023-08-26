@@ -203,7 +203,8 @@ namespace ChessChallenge.Example
 			Move bestMove = Move.NullMove;
 			//If we have an "exact" score (a < score < beta) just use that
 			//If we have a lower bound better than beta, use that
-			//If we have an upper bound worse than alpha, use that
+			//If we have an upper bound worse than alpha, use that 
+			//TODO - ADD !pv FOR THIS
 			if (notRoot && entry.Item1 == zobristHash && entry.Item4 >= depth && Math.Abs(entryScore) < 50000 && (
 					// Exact
 					entryFlag == 1 ||
