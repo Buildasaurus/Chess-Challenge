@@ -120,7 +120,7 @@ namespace ChessChallenge.Example
 				depth = Math.Max(depth, (sbyte)0);
 				//start searching
 
-				int oldAlpha = alpha, R = 2, movesScored = 0, moveCount = 0, max = -100000000;
+				int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000;
 
 				if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																	//Much used variables
@@ -142,6 +142,9 @@ namespace ChessChallenge.Example
 					depth++;
 
 				//QSearch
+
+				//local search function to save tokens.
+				int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
 				bool isQSearch = depth <= 0;
 				if (isQSearch)
 				{
@@ -151,18 +154,26 @@ namespace ChessChallenge.Example
 						return max;
 					alpha = Math.Max(alpha, max);
 				}
-				//local search function to save tokens.
-				int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
-
-				// Null move pruning - is perhaps best with more time on the clock?
-				if (!isPV && !isInCheck && depth > R)
+				else if (!isPV && !isInCheck)            // pruning of different sorts
 				{
-					board.TrySkipTurn();
-					int score = search(R, beta);
-					board.UndoSkipTurn();
-					if (score >= beta)
-						return score;
+					// Reverse futility pruning
+					int RFPEval = evaluation() * (board.IsWhiteToMove ? 1 : -1);
+
+					if (depth <= 5 && RFPEval - 96 * depth >= beta)
+						return RFPEval;
+
+
+					//Null move pruning
+					if (depth > 2)
+					{
+						board.TrySkipTurn();
+						int score = search(2, beta);
+						board.UndoSkipTurn();
+						if (score >= beta)
+							return score;
+					}
 				}
+
 				// Transposition table lookup
 				ulong zobristHash = board.ZobristKey;
 				ref var entry = ref transpositionTable[zobristHash & 0x3FFFFF];
@@ -182,7 +193,6 @@ namespace ChessChallenge.Example
 					lookups++; //#DEBUG
 					return entryScore;
 				}
-
 
 				if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
