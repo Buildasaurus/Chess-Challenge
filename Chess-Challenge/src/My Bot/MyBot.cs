@@ -123,7 +123,7 @@ public class MyBot : IChessBot
 			depth = Math.Max(depth, (sbyte)0);
 			//start searching
 
-			int oldAlpha = alpha, R = 2, movesScored = 0, moveCount = 0, max = -100000000;
+			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000;
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																//Much used variables
@@ -145,6 +145,9 @@ public class MyBot : IChessBot
 				depth++;
 
 			//QSearch
+
+			//local search function to save tokens.
+			int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
 			bool isQSearch = depth <= 0;
 			if (isQSearch)
 			{
@@ -154,9 +157,25 @@ public class MyBot : IChessBot
 					return max;
 				alpha = Math.Max(alpha, max);
 			}
-			//local search function to save tokens.
-			int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
+			else if(!isPV && !isInCheck)            // pruning of different sorts
+			{
+				// Reverse futility pruning
+				int RFPEval = evaluation() * (board.IsWhiteToMove ? 1 : -1);
 
+				if (depth <= 5 && RFPEval - 96 * depth >= beta)
+					return RFPEval;
+
+
+				//Null move pruning
+				if (depth > 2)
+				{
+					board.TrySkipTurn();
+					int score = search(2, beta);
+					board.UndoSkipTurn();
+					if (score >= beta)
+						return score;
+				}
+			}
 
 			// Transposition table lookup
 			ulong zobristHash = board.ZobristKey;
@@ -177,22 +196,6 @@ public class MyBot : IChessBot
 				lookups++; //#DEBUG
 				return entryScore;
 			}
-
-			// pruning of different sorts
-			if (!isPV && !isInCheck)
-			{
-				//Null move pruning
-				if (depth > R)
-				{
-					board.TrySkipTurn();
-					int score = search(R, beta);
-					board.UndoSkipTurn();
-					if (score >= beta)
-						return score;
-				}
-
-			}
-
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
