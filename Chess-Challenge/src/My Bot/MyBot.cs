@@ -128,7 +128,7 @@ public class MyBot : IChessBot
 			depth = Math.Max(depth, (sbyte)0);
 			//start searching
 
-			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000;
+			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000, eval;
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																//Much used variables
@@ -152,7 +152,7 @@ public class MyBot : IChessBot
 			//QSearch
 
 			//local search function to save tokens.
-			int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
+			int search(int reductions, int betas) => eval = -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
 			bool isQSearch = depth <= 0;
 			if (isQSearch)
 			{
@@ -175,10 +175,10 @@ public class MyBot : IChessBot
 				if (depth > 2)
 				{
 					board.TrySkipTurn();
-					int score = search(2, beta);
+					search(2, beta);
 					board.UndoSkipTurn();
-					if (score >= beta)
-						return score;
+					if (eval >= beta)
+						return eval;
 				}
 			}
 
@@ -225,7 +225,6 @@ public class MyBot : IChessBot
 			// if we are at root level, make sure that the overallbest move from earlier iterations is at top.
 			foreach (Move move in legalmoves)
 			{
-				int eval;
 				moveCount++; // Increment the move counter
 
 				//Early stop at top level
@@ -236,7 +235,7 @@ public class MyBot : IChessBot
 				board.MakeMove(move);
 				if (isQSearch)
 				{
-					eval = search(depth, beta);
+					search(depth, beta);
 				}
 				else
 				{
@@ -244,15 +243,11 @@ public class MyBot : IChessBot
 					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
 					//reduction = isPV && reduction > 0 ? 1 : 0;
 
-					if (moveCount == 1)
-						eval = search(reduction, beta);
-					else
-					{
-						eval = search(reduction, alpha + 1); //should be +, because it will be negated in the search method.
-						if (eval > alpha || (reduction > 0 && beta > eval))
-							eval = search(0, beta);
-					}
-
+					if (moveCount == 1 ||
+							// If PV-node / qsearch, search(beta)
+							search(reduction, alpha + 1) < 999999 && eval > alpha || (beta > eval && reduction > 0)
+							// If null-window search fails-high, search(beta)
+							) search(0, beta);
 
 				}
 				if (eval > max)
