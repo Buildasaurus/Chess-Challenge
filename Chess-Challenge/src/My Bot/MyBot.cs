@@ -67,13 +67,13 @@ public class MyBot : IChessBot
 	{
 		//Saves tokens to unpack every time.
 		int[][] UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
-			{
-				int pieceType = 0;
-				return decimal.GetBits(packedTable).Take(3)
-					.SelectMany(c => BitConverter.GetBytes(c)
-						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
-					.ToArray();
-			}).ToArray();
+		{
+			int pieceType = 0;
+			return decimal.GetBits(packedTable).Take(3)
+				.SelectMany(c => BitConverter.GetBytes(c)
+					.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
+				.ToArray();
+		}).ToArray();
 
 		Console.WriteLine("-----NBEW bot thinking----");//#DEBUG
 
@@ -157,15 +157,7 @@ public class MyBot : IChessBot
 			//local search function to save tokens.
 			int search(int reductions, int betas) => -negamax((sbyte)(depth - 1 - reductions), ply + 1, -betas, -alpha);
 
-			// Null move pruning - is perhaps best with more time on the clock?
-			if (!isPV && !isInCheck && depth > R)
-			{
-				board.TrySkipTurn();
-				int score = search(R, beta);
-				board.UndoSkipTurn();
-				if (score >= beta)
-					return score;
-			}
+
 			// Transposition table lookup
 			ulong zobristHash = board.ZobristKey;
 			ref var entry = ref transpositionTable[zobristHash & 0x3FFFFF];
@@ -184,6 +176,21 @@ public class MyBot : IChessBot
 			{
 				lookups++; //#DEBUG
 				return entryScore;
+			}
+
+			// pruning of different sorts
+			if (!isPV && !isInCheck)
+			{
+				//Null move pruning
+				if (depth > R)
+				{
+					board.TrySkipTurn();
+					int score = search(R, beta);
+					board.UndoSkipTurn();
+					if (score >= beta)
+						return score;
+				}
+
 			}
 
 
@@ -303,7 +310,4 @@ public class MyBot : IChessBot
 		return overAllBestMove;
 	}
 
-
-
-	
 }
