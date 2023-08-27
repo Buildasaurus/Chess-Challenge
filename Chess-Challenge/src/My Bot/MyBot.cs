@@ -48,7 +48,7 @@ public class MyBot : IChessBot
 			}
 		}
 	}*/
-	// History table definition
+
 	// Define a structure to store transposition table entries
 	int lookups = 0; //#DEBUG
 	int entryCount = 0;//#DEBUG
@@ -76,8 +76,13 @@ public class MyBot : IChessBot
 		}).ToArray();
 
 		Console.WriteLine("-----NBEW bot thinking----");//#DEBUG
-
+		
+		// History table definition
 		int[,,] historyTable = new int[2, 7, 64];
+
+		// killer table definition
+		Move[] killers = new Move[999]; 
+
 		int timeForTurn = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining / 30);
 		bool timeToStop = false;
 		/// <summary>
@@ -211,7 +216,7 @@ public class MyBot : IChessBot
 				// Hash move
 				move == goodMove ? 9_000_000 :
 				// MVVLVA
-				move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType :
+				move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType : move == killers[ply] ? 999_000 :
 				// History
 				historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index]);
 
@@ -266,6 +271,7 @@ public class MyBot : IChessBot
 				alpha = Math.Max(alpha, max);
 				if (alpha >= beta)
 				{
+					if (!move.IsCapture) killers[ply] = move;
 					//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
 					historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 					break;
