@@ -109,7 +109,7 @@ public class MyBot : IChessBot
 				middlegame *= -1;
 				endgame *= -1;
 			}
-			return (middlegame * gamephase + endgame * (24 - gamephase)) / 24;
+			return (middlegame * gamephase + endgame * (24 - gamephase)) / (board.IsWhiteToMove ? 24 : -24);
 		}
 
 		/// <summary>
@@ -156,7 +156,7 @@ public class MyBot : IChessBot
 			bool isQSearch = depth <= 0;
 			if (isQSearch)
 			{
-				max = evaluation() * (board.IsWhiteToMove ? 1 : -1);
+				max = evaluation();
 
 				if (max >= beta)
 					return max;
@@ -165,7 +165,7 @@ public class MyBot : IChessBot
 			else if(!isPV && !isInCheck)            // pruning of different sorts
 			{
 				// Reverse futility pruning
-				int RFPEval = evaluation() * (board.IsWhiteToMove ? 1 : -1);
+				int RFPEval = evaluation();
 
 				if (depth <= 5 && RFPEval - 96 * depth >= beta)
 					return RFPEval;
@@ -300,7 +300,7 @@ public class MyBot : IChessBot
 		{
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining; //#DEBUG
-
+			//can save tokens by removing besteval here, just calling negamax
 			bestEval = -negamax(d, 0, -10000000, 10000000);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
