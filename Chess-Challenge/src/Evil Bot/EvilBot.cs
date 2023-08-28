@@ -241,8 +241,8 @@ namespace ChessChallenge.Example
 						//reduction = isPV && reduction > 0 ? 1 : 0;
 
 						if (moveCount == 1 ||
-								// If PV-node / qsearch, search(beta) 
-								search(reduction, alpha + 1) < 999999 && eval > alpha || (beta > eval && reduction > 0)
+								// If PV-node / qsearch, search(beta)
+								search(reduction, alpha + 1) < 999999 && eval > alpha && (beta > eval || reduction > 0)
 								// If null-window search fails-high, search(beta)
 								) search(0, beta);
 
