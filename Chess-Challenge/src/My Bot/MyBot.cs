@@ -65,13 +65,7 @@ public class MyBot : IChessBot
 	Move overAllBestMove;
 	public Move Think(Board board, Timer timer)
 	{
-		decimal packedValue = 0;
-		for (int i = 0; i < PieceValues.Length; i++)
-		{
-			sbyte value = (sbyte)(PieceValues[i] / 5);
-			packedValue += (decimal)value * (decimal)Math.Pow(2, i * 8);
-		}
-		Console.WriteLine(packedValue);
+
 		//Saves tokens to unpack every time.
 		int[][] UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 		{
