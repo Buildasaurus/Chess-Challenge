@@ -5,13 +5,9 @@ using System.Linq;
 using System.Numerics;
 
 /// <summary>
-/// 
-/// Ideas
-/// - Kind bot - When winning - go for a draw instead 
-/// - No queen bot - just throw it away and try to win anyways
-/// - scholars mate / trick bot - always go for certain tricks.
+/// killers and lmr and below 1024
 /// </summary>
-public class MyBot : IChessBot
+public class V9 : IChessBot
 {
 
 	List<int> counters = new List<int>(); //#DEBUG
