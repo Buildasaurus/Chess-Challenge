@@ -54,7 +54,7 @@ public class MyBot : IChessBot
 	int entryCount = 0;//#DEBUG
 	int startime;//#DEBUG
 
-	private readonly int[] moveScores = new int[218], phase_weight = { 0, 1, 1, 2, 4, 0 },
+	private readonly int[] moveScores = new int[218],
 				PieceValues = { 82, 337, 365, 477, 1025, 0, // Middlegame
 								94, 281, 297, 512, 936, 0}; // Endgame
 
@@ -97,8 +97,10 @@ public class MyBot : IChessBot
 				for (int piece = -1, square; ++piece < 6;)
 					for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, sideToMove > 0); mask != 0;)
 					{
-						//gamephase goes from 0 to 24, 24 is midgame, 0 is endgame
-						gamephase += phase_weight[piece];
+						//gamephase goes from 0 to 24, 24 is midgame, 0 is endgame. This bitwise operation has paranthesis as such
+						//gamephase += (0x00042110 >> piece * 4) & 0x0F; So you push "piece" bits out of the way, and then use the lsb.
+
+						gamephase += 0x00042110 >> piece * 4 & 0x0F;
 						//Get index of first bit, which is index of the piece- Then XOR if it's white, to flip the board,
 						//cuz tables are opposite, so 0,0 isn't a1, but a8.
 						square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ 56 * sideToMove;
@@ -202,7 +204,7 @@ public class MyBot : IChessBot
 				return entryScore;
 			}
 			// Internal Iterative Reductions (IIR)
-			else if (depth > 4 && !isInCheck) depth--;
+			//else if (depth > 4 && !isInCheck) depth--;
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
