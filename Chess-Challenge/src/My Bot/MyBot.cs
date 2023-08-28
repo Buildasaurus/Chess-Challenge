@@ -227,7 +227,7 @@ public class MyBot : IChessBot
 			{
 				moveCount++; // Increment the move counter
 
-				//Early stop at top level
+				//Early stop at top level 
 				if (timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
 				if (timeToStop)
 					return 0;
