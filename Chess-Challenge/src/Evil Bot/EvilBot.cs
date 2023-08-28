@@ -62,6 +62,7 @@ namespace ChessChallenge.Example
 		Move overAllBestMove;
 		public Move Think(Board board, Timer timer)
 		{
+
 			//Saves tokens to unpack every time.
 			int[][] UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 			{
@@ -201,7 +202,7 @@ namespace ChessChallenge.Example
 					return entryScore;
 				}
 				// Internal Iterative Reductions (IIR)
-				//else if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
+				//if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
 
 				if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
@@ -314,5 +315,6 @@ namespace ChessChallenge.Example
 
 			return overAllBestMove;
 		}
+
 	}
 }

@@ -205,7 +205,7 @@ public class MyBot : IChessBot
 				return entryScore;
 			}
 			// Internal Iterative Reductions (IIR)
-			if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
+			//if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
