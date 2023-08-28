@@ -65,6 +65,13 @@ public class MyBot : IChessBot
 	Move overAllBestMove;
 	public Move Think(Board board, Timer timer)
 	{
+		decimal packedValue = 0;
+		for (int i = 0; i < PieceValues.Length; i++)
+		{
+			sbyte value = (sbyte)(PieceValues[i] / 5);
+			packedValue += (decimal)value * (decimal)Math.Pow(2, i * 8);
+		}
+		Console.WriteLine(packedValue);
 		//Saves tokens to unpack every time.
 		int[][] UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 		{
@@ -204,7 +211,7 @@ public class MyBot : IChessBot
 				return entryScore;
 			}
 			// Internal Iterative Reductions (IIR)
-			else if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
+			//else if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
