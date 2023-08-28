@@ -76,12 +76,12 @@ public class MyBot : IChessBot
 		}).ToArray();
 
 		Console.WriteLine("-----NBEW bot thinking----");//#DEBUG
-		
+
 		// History table definition
 		int[,,] historyTable = new int[2, 7, 64];
 
 		// killer table definition
-		Move[] killers = new Move[999]; 
+		Move[] killers = new Move[999];
 
 		int timeForTurn = Math.Min(timer.MillisecondsRemaining - 50, timer.MillisecondsRemaining / 30);
 		bool timeToStop = false;
@@ -164,7 +164,7 @@ public class MyBot : IChessBot
 					return max;
 				alpha = Math.Max(alpha, max);
 			}
-			else if(!isPV && !isInCheck)            // pruning of different sorts
+			else if (!isPV && !isInCheck)            // pruning of different sorts
 			{
 				// Reverse futility pruning
 				int RFPEval = evaluation();
@@ -204,7 +204,7 @@ public class MyBot : IChessBot
 				return entryScore;
 			}
 			// Internal Iterative Reductions (IIR)
-			//else if (depth > 4 && !isInCheck) depth--;
+			else if (depth > 4 && !isInCheck && entry.Item1 != zobristHash) depth--;
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
@@ -299,7 +299,7 @@ public class MyBot : IChessBot
 		{
 			if (timeToStop) break;
 			startime = timer.MillisecondsRemaining; //#DEBUG
-			//can save tokens by removing besteval here, just calling negamax
+													//can save tokens by removing besteval here, just calling negamax
 			bestEval = -negamax(d, 0, -10000000, 10000000);
 			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
 			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
