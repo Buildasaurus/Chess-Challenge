@@ -224,8 +224,8 @@ namespace ChessChallenge.Example
 				{
 					moveCount++; // Increment the move counter
 
-					//Early stop at top level
-					if (!timeToStop && timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
+					//Early stop at top level 
+					if (timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
 					if (timeToStop)
 						return 0;
 

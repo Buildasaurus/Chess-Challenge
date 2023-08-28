@@ -201,6 +201,8 @@ public class MyBot : IChessBot
 				lookups++; //#DEBUG
 				return entryScore;
 			}
+			// Internal Iterative Reductions (IIR)
+			else if (depth > 4 && !isInCheck) depth--;
 
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
