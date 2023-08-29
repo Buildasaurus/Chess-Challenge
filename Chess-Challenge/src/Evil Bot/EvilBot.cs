@@ -207,7 +207,7 @@ namespace ChessChallenge.Example
 				if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 				// Generate legal moves and sort them
-				Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = Move.NullMove;
+				Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = Move.NullMove; //TODO, just write default.
 
 				// Gamestate, checkmate and draws
 				Span<Move> legalmoves = stackalloc Move[218];
@@ -237,8 +237,8 @@ namespace ChessChallenge.Example
 					board.MakeMove(move);
 					if (isQSearch)
 					{
-						search(depth, beta);
-					}
+						search(depth, beta); //is really just 0, beta right?
+					} //TODO - Tokensave-  just do ||QSEARCH in the or statement below, after movecount == 1, cuz this is the same.
 					else
 					{
 						// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
@@ -268,9 +268,12 @@ namespace ChessChallenge.Example
 					alpha = Math.Max(alpha, max);
 					if (alpha >= beta)
 					{
-						if (!move.IsCapture) killers[ply] = move;
+						if (!move.IsCapture)
+						{
+							killers[ply] = move;
+							historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
+						}
 						//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
-						historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 						break;
 					}
 				}
@@ -295,7 +298,8 @@ namespace ChessChallenge.Example
 			int thinkStart = timer.MillisecondsRemaining; //#DEBUG
 			for (sbyte d = 1; d <= 32; d++)
 			{
-				if (timeToStop) break;
+				//TODO Aspiration Windows (without looking at Tyrants code pls ;D)
+				if (timeToStop) break; //TODO, move Return bestallmove here.
 				startime = timer.MillisecondsRemaining; //#DEBUG
 														//can save tokens by removing besteval here, just calling negamax
 				bestEval = -negamax(d, 0, -10000000, 10000000);
