@@ -300,7 +300,7 @@ public class MyBot : IChessBot
 		counters.Add(0);//#DEBUG
 		int bestEval = 0; //#DEBUG
 		int thinkStart = timer.MillisecondsRemaining; //#DEBUG
-        for (sbyte d = 1; d <= 32;)
+        for (sbyte d = 2; d <= 64;)
         {
             //TODO Aspiration Windows (without looking at Tyrants code pls ;D)
 
@@ -309,19 +309,20 @@ public class MyBot : IChessBot
 
             bestEval = negamax(d, 0, aspAlpha, aspBeta);
 
-            if (bestEval < aspAlpha) //If eval is below alpha, do wider search next time.
-                aspAlpha -= 70;
-            else if (bestEval > aspBeta) //if eval is above beta, then do beta wider next time.
-                aspBeta += 70;
+            if (bestEval <= aspAlpha) //If eval is below alpha, do wider search next time.
+                aspAlpha = bestEval - 100;
+            else if (bestEval >= aspBeta) //if eval is above beta, then do beta wider next time.
+                aspBeta = bestEval + 100;
             else //else, we were in limits, so just set window around eval
             {
                 d++;
-                aspAlpha = bestEval - 20;
-                aspBeta = bestEval + 20;
+                aspAlpha = bestEval - 60;
+				aspBeta = bestEval + 60;
+                Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+                Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
+                Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+
             }
-            Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
-            Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
-            Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 
         }
 
