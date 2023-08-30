@@ -134,7 +134,7 @@ public class MyBot : IChessBot
 			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000, eval;
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
-																//Much used variables
+			//Much used variables
 			bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
 
 			//Draw detection
@@ -210,7 +210,7 @@ public class MyBot : IChessBot
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 			// Generate legal moves and sort them
-			Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = Move.NullMove; //TODO, just write default.
+			Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = default;
 
 			// Gamestate, checkmate and draws
 			Span<Move> legalmoves = stackalloc Move[218];
@@ -238,23 +238,17 @@ public class MyBot : IChessBot
 					return 0;
 
 				board.MakeMove(move);
-				if (isQSearch)
-				{
-					search(depth, beta); //is really just 0, beta right?
-				} //TODO - Tokensave-  just do ||QSEARCH in the or statement below, after movecount == 1, cuz this is the same.
-				else
-				{
-					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
-					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
-					//reduction = isPV && reduction > 0 ? 1 : 0;
 
-					if (moveCount == 1 ||
-							// If PV-node / qsearch, search(beta)
-							search(reduction, alpha + 1) < 999999 && eval > alpha && (beta > eval || reduction > 0)
-							// If null-window search fails-high, search(beta)
-							) search(0, beta);
+				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
+				int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+				//reduction = isPV && reduction > 0 ? 1 : 0;
 
-				}
+				if (moveCount == 1 || isQSearch ||
+						// If PV-node / qsearch, search(beta)
+						search(reduction, alpha + 1) < 999999 && eval > alpha && (beta > eval || reduction > 0)
+						// If null-window search fails-high, search(beta)
+						) search(0, beta);
+
 				if (eval > max)
 				{
 					//if root level new best move is found, then save it to be played or for next iteration 
@@ -299,10 +293,10 @@ public class MyBot : IChessBot
 		counters.Add(0);//#DEBUG
 		int bestEval = 0; //#DEBUG
 		int thinkStart = timer.MillisecondsRemaining; //#DEBUG
-		for (sbyte d = 1; d <= 32; d++)
+		for (sbyte d = 1; d <= 32; d++) //start depth 2 doesn't gain. Score of MyBot vs EvilBot: 255 - 273 - 290  [0.489] 818
 		{
 			//TODO Aspiration Windows (without looking at Tyrants code pls ;D)
-			if (timeToStop) break; //TODO, move Return bestallmove here.
+			if (timeToStop) break; //TODO, move Return bestallmove here. after no debug
 			startime = timer.MillisecondsRemaining; //#DEBUG
 													//can save tokens by removing besteval here, just calling negamax
 			bestEval = -negamax(d, 0, -10000000, 10000000);
