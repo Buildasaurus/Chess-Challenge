@@ -276,7 +276,7 @@ public class MyBot : IChessBot
 						killers[ply] = move;
 						historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 					}
-						//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
+					//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
 					break;
 				}
 			}
@@ -294,39 +294,25 @@ public class MyBot : IChessBot
 
 			return max;
 		}
-		int aspAlpha = -999999999, aspBeta = 999999999;
 		lookups = 0; //#DEBUG
 		entryCount = 0; //#DEBUG
 		counters.Add(0);//#DEBUG
 		int bestEval = 0; //#DEBUG
 		int thinkStart = timer.MillisecondsRemaining; //#DEBUG
-        for (sbyte d = 2; d <= 64;)
-        {
-            //TODO Aspiration Windows (without looking at Tyrants code pls ;D)
+		for (sbyte d = 1; d <= 32; d++)
+		{
+			//TODO Aspiration Windows (without looking at Tyrants code pls ;D)
+			if (timeToStop) break; //TODO, move Return bestallmove here.
+			startime = timer.MillisecondsRemaining; //#DEBUG
+													//can save tokens by removing besteval here, just calling negamax
+			bestEval = -negamax(d, 0, -10000000, 10000000);
+			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
+			Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 
-            if (timeToStop) break; //TODO, move Return bestallmove here.
-            startime = timer.MillisecondsRemaining; //#DEBUG
+		}
 
-            bestEval = negamax(d, 0, aspAlpha, aspBeta);
-
-            if (bestEval <= aspAlpha) //If eval is below alpha, do wider search next time.
-                aspAlpha = bestEval - 100;
-            else if (bestEval >= aspBeta) //if eval is above beta, then do beta wider next time.
-                aspBeta = bestEval + 100;
-            else //else, we were in limits, so just set window around eval
-            {
-                d++;
-                aspAlpha = bestEval - 60;
-				aspBeta = bestEval + 60;
-                Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
-                Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
-                Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
-
-            }
-
-        }
-
-        Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+		Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 		Console.WriteLine("info string useful lookups:  " + lookups);//#DEBUG
 		Console.WriteLine("info string Entry count " + entryCount);//#DEBUG
 		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
