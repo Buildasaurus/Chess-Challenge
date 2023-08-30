@@ -294,25 +294,38 @@ public class MyBot : IChessBot
 
 			return max;
 		}
+		int aspAlpha = -999999999, aspBeta = 999999999;
 		lookups = 0; //#DEBUG
 		entryCount = 0; //#DEBUG
 		counters.Add(0);//#DEBUG
 		int bestEval = 0; //#DEBUG
 		int thinkStart = timer.MillisecondsRemaining; //#DEBUG
-		for (sbyte d = 1; d <= 32; d++)
-		{
-			//TODO Aspiration Windows (without looking at Tyrants code pls ;D)
-			if (timeToStop) break; //TODO, move Return bestallmove here.
-			startime = timer.MillisecondsRemaining; //#DEBUG
-													//can save tokens by removing besteval here, just calling negamax
-			bestEval = -negamax(d, 0, -10000000, 10000000);
-			Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
-			Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
-			Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+        for (sbyte d = 1; d <= 32;)
+        {
+            //TODO Aspiration Windows (without looking at Tyrants code pls ;D)
 
-		}
+            if (timeToStop) break; //TODO, move Return bestallmove here.
+            startime = timer.MillisecondsRemaining; //#DEBUG
 
-		Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+            bestEval = negamax(d, 0, aspAlpha, aspBeta);
+
+            if (bestEval < aspAlpha) //If eval is below alpha, do wider search next time.
+                aspAlpha -= 70;
+            else if (bestEval > aspBeta) //if eval is above beta, then do beta wider next time.
+                aspBeta += 70;
+            else //else, we were in limits, so just set window around eval
+            {
+                d++;
+                aspAlpha = bestEval - 20;
+                aspBeta = bestEval + 20;
+            }
+            Console.WriteLine($"info string best move at depth {d} was {overAllBestMove} with eval at {bestEval}");//#DEBUG
+            Console.WriteLine($"info string Time used for depth {d}: {startime - timer.MillisecondsRemaining} miliseconds");//#DEBUG
+            Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
+
+        }
+
+        Console.WriteLine("info string -------node count------- " + counters[^1]);//#DEBUG
 		Console.WriteLine("info string useful lookups:  " + lookups);//#DEBUG
 		Console.WriteLine("info string Entry count " + entryCount);//#DEBUG
 		Console.WriteLine($"info string Final best move was {overAllBestMove} with eval at {bestEval}");//#DEBUG
