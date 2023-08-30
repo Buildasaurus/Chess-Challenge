@@ -164,6 +164,8 @@ namespace ChessChallenge.Example
 				}
 				else if (!isPV && !isInCheck)            // pruning of different sorts
 				{
+
+
 					// Reverse futility pruning
 					int RFPEval = evaluation();
 
@@ -234,7 +236,11 @@ namespace ChessChallenge.Example
 					if (timeToStop)
 						return 0;
 
-					board.MakeMove(move);
+
+					//Futility & LMP
+					//if (fprune && moveCount != 1 && moveScores[moveCount])
+
+						board.MakeMove(move);
 
 					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
 					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
