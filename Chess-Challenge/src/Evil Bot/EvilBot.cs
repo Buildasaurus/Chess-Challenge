@@ -22,7 +22,7 @@ namespace ChessChallenge.Example
 		75502243563200070682362835182m, 78896921543467230670583692029m, 2489164206166677455700101373m, 4338830174078735659125311481m, 4960199192571758553533648130m, 3420013420025511569771334658m, 1557077491473974933188251927m, 77376040767919248347203368440m,
 		73949978050619586491881614568m, 77043619187199676893167803647m, 1212557245150259869494540530m, 3081561358716686153294085872m, 3392217589357453836837847030m, 1219782446916489227407330320m, 78580145051212187267589731866m, 75798434925965430405537592305m,
 		68369566912511282590874449920m, 72396532057599326246617936384m, 75186737388538008131054524416m, 77027917484951889231108827392m, 73655004947793353634062267392m, 76417372019396591550492896512m, 74568981255592060493492515584m, 70529879645288096380279255040m,
-	};
+	}; //tokens to be saved by not making a variable for the packed pesto tables, but just decompressing right away.
 
 
 
@@ -137,7 +137,9 @@ namespace ChessChallenge.Example
 				//Draw detection
 				if (notRoot && board.IsDraw())
 					return 0; //slight discouragement of draws.
-				if (board.IsInCheckmate())
+				if (board.IsInCheckmate()) // TODO, double check if isincheckmate really isn't worse. Because it generates moves not cached. 
+										   //you can move this below move loop, because if it's checkmate, there aren't going to be any moves anyways, then just do
+										   //if max == -1000000000, and in check, then it must be a mate, because no legal moves.
 					return ply - 999999;
 
 				//Debug
@@ -240,10 +242,10 @@ namespace ChessChallenge.Example
 					//Futility & LMP
 					//if (fprune && moveCount != 1 && moveScores[moveCount])
 
-						board.MakeMove(move);
+					board.MakeMove(move);
 
 					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
-					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + Math.Log2(depth) * Math.Log2(moveCount) / 2 : 0);
+					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 5 + moveCount / 7 : 0);
 					//reduction = isPV && reduction > 0 ? 1 : 0;
 
 					if (moveCount == 1 || isQSearch ||
