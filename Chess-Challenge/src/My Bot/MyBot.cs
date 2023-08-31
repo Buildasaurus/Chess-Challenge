@@ -134,7 +134,7 @@ public class MyBot : IChessBot
 			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000, eval;
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
-			//Much used variables
+																//Much used variables
 			bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
 
 			//Draw detection
@@ -167,6 +167,8 @@ public class MyBot : IChessBot
 			}
 			else if (!isPV && !isInCheck)            // pruning of different sorts
 			{
+
+
 				// Reverse futility pruning
 				int RFPEval = evaluation();
 
@@ -236,6 +238,10 @@ public class MyBot : IChessBot
 				if (timer.MillisecondsElapsedThisTurn > timeForTurn) timeToStop = true;
 				if (timeToStop)
 					return 0;
+
+
+				//Futility & LMP
+				//if (fprune && moveCount != 1 && moveScores[moveCount])
 
 				board.MakeMove(move);
 
