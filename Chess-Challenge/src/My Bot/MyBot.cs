@@ -245,8 +245,8 @@ public class MyBot : IChessBot
 
 
                 //Futility pruning
-                if (fprune && moveCount != 1 && moveScores[moveCount] <= 999_000 || //exlude captures, include killers and worse
-                       !isPV && moveCount > 3 + depth * depth && moveScores[moveCount] < 999_000 && depth <= 4) break; //only history moves
+                //exlude captures, include killers and worse
+                if (fprune && moveCount != 1 && moveScores[moveCount] <= 999_000) break; //only history moves
 
 
                 board.MakeMove(move);
