@@ -178,7 +178,7 @@ public class MyBot : IChessBot
 
 				if (depth <= 8)  // The idea is that the positions eval is so bad that even after adding 140*depth, that
 					//it's still below alpha (so worse than something else we've found), then we can prune branches.
-					fprune = RFPEval + 140 * depth <= alpha;
+					fprune = RFPEval + 80 * depth <= alpha;
 
                 //Null move pruning
                 if (depth > 2)
@@ -246,7 +246,7 @@ public class MyBot : IChessBot
 
                 //Futility pruning
                 //exlude captures, include killers and worse
-                if (fprune && moveCount != 1 && moveScores[moveCount] <= 999_000) break; //only history moves
+                if (fprune && moveCount != 1 && moveScores[moveCount] <= 999_000) break;
 
 
                 board.MakeMove(move);
