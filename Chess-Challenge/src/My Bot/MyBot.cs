@@ -142,8 +142,8 @@ public class MyBot : IChessBot
 			if (notRoot && board.IsDraw())
 				return 0; //slight discouragement of draws.
 			if (board.IsInCheckmate()) // TODO, double check if isincheckmate really isn't worse. Because it generates moves not cached. 
-				//you can move this below move loop, because if it's checkmate, there aren't going to be any moves anyways, then just do
-				//if max == -1000000000, and in check, then it must be a mate, because no legal moves.
+									   //you can move this below move loop, because if it's checkmate, there aren't going to be any moves anyways, then just do
+									   //if max == -1000000000, and in check, then it must be a mate, because no legal moves.
 				return ply - 999999;
 
 			//Debug
@@ -170,19 +170,22 @@ public class MyBot : IChessBot
 			}
 			else if (!isPV && !isInCheck)            // pruning of different sorts
 			{
-
 				// Reverse futility pruning
 				int RFPEval = evaluation();
 
-				if (depth <= 5 && RFPEval - 96 * depth >= beta)
-					return RFPEval;
-
-				if (depth <= 8)  // The idea is that the positions eval is so bad that even after adding 140*depth, that
+				if (depth <= 6)
+				{
+					// The idea is that the positions eval is so bad that even after adding 140*depth, that
 					//it's still below alpha (so worse than something else we've found), then we can prune branches.
 					fprune = RFPEval + 140 * depth <= alpha;
+					if (RFPEval - 96 * depth >= beta)
+						return RFPEval;
 
-                //Null move pruning
-                if (depth > 2)
+				}
+
+
+				//Null move pruning
+				if (depth > 2)
 				{
 					board.TrySkipTurn();
 					search(2, beta);
@@ -245,15 +248,15 @@ public class MyBot : IChessBot
 					return 0;
 
 
-                //Futility pruning
-                //exlude captures, include killers and worse
-                if (fprune && moveCount > 2 && moveScores[moveCount] < 999_000 && !move.IsPromotion) continue;
+				//Futility pruning
+				//exlude captures, include killers and worse
+				if (fprune && moveCount > 2 && moveScores[moveCount] < 999_000 && !move.IsPromotion) continue;
 
 
-                board.MakeMove(move);
+				board.MakeMove(move);
 
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
-				int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0);
+				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0;
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 
 				if (moveCount == 1 || isQSearch ||
