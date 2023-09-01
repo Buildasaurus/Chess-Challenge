@@ -246,7 +246,7 @@ public class MyBot : IChessBot
 
                 //Futility pruning
                 //exlude captures, include killers and worse
-                if (fprune && moveCount != 1 && moveScores[moveCount] <= 999_000) break;
+                if (fprune && moveCount > 2 && moveScores[moveCount] <= 999_000) break;
 
 
                 board.MakeMove(move);
