@@ -132,7 +132,7 @@ namespace ChessChallenge.Example
 
 				if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																	//Much used variables
-				bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck();
+				bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
 
 				//Draw detection
 				if (notRoot && board.IsDraw())
@@ -167,13 +167,15 @@ namespace ChessChallenge.Example
 				else if (!isPV && !isInCheck)            // pruning of different sorts
 				{
 
-
 					// Reverse futility pruning
 					int RFPEval = evaluation();
 
 					if (depth <= 5 && RFPEval - 96 * depth >= beta)
 						return RFPEval;
 
+					if (depth <= 8)  // The idea is that the positions eval is so bad that even after adding 140*depth, that
+									 //it's still below alpha (so worse than something else we've found), then we can prune branches.
+						fprune = RFPEval + 140 * depth <= alpha;
 
 					//Null move pruning
 					if (depth > 2)
@@ -239,12 +241,14 @@ namespace ChessChallenge.Example
 						return 0;
 
 
-					//Futility & LMP
-					//if (fprune && moveCount != 1 && moveScores[moveCount])
+					//Futility pruning
+					//exlude captures, include killers and worse
+					if (fprune && moveCount > 2 && moveScores[moveCount] < 999_000 && !move.IsPromotion) continue;
+
 
 					board.MakeMove(move);
 
-					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
+					// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
 					int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0);
 					//reduction = isPV && reduction > 0 ? 1 : 0;
 
