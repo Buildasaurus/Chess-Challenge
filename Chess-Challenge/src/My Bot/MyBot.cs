@@ -251,7 +251,7 @@ public class MyBot : IChessBot
 
                 board.MakeMove(move);
 
-				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction
+				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
 				int reduction = (int)((depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0);
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 
