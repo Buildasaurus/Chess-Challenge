@@ -142,7 +142,7 @@ public class MyBot : IChessBot
 
 			//Draw detection
 			if (board.IsDraw())
-				return 50; //slight encouregement of draws.
+				return 0; //slight encouregement of draws.
 			if (board.IsInCheckmate()) 
 				return ply - 999999;
 
