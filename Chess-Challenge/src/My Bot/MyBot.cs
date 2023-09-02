@@ -173,7 +173,7 @@ public class MyBot : IChessBot
 				// Reverse futility pruning
 				int RFPEval = evaluation();
 
-				if (depth <= 6)
+				if (depth <= 6) //6 seems good
 				{
 					// The idea is that the positions eval is so bad that even after adding 140*depth, that
 					//it's still below alpha (so worse than something else we've found), then we can prune branches.
