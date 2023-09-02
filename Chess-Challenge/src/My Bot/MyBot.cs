@@ -136,14 +136,12 @@ public class MyBot : IChessBot
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																//Much used variables
-			bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
+			bool notIsPV = beta - alpha <= 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
 
 			//Draw detection
-			if (notRoot && board.IsDraw())
+			if (board.IsDraw())
 				return 0; //slight discouragement of draws.
-			if (board.IsInCheckmate()) // TODO, double check if isincheckmate really isn't worse. Because it generates moves not cached. 
-									   //you can move this below move loop, because if it's checkmate, there aren't going to be any moves anyways, then just do
-									   //if max == -1000000000, and in check, then it must be a mate, because no legal moves.
+			if (board.IsInCheckmate()) 
 				return ply - 999999;
 
 			//Debug
@@ -168,7 +166,7 @@ public class MyBot : IChessBot
 					return max;
 				alpha = Math.Max(alpha, max);
 			}
-			else if (!isPV && !isInCheck)            // pruning of different sorts
+			else if (notIsPV && !isInCheck)            // pruning of different sorts
 			{
 				// Reverse futility pruning
 				int RFPEval = evaluation();
@@ -256,7 +254,7 @@ public class MyBot : IChessBot
 				board.MakeMove(move);
 
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
-				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0;
+				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && notIsPV) ? 1 + depth / 8 + moveCount / 8 : 0;
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 
 				if (moveCount == 1 || isQSearch ||
