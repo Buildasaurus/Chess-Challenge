@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 
 /// <summary>
-/// has fp needs to be updated to below 1024 tokens though.
+/// has fp too
 /// </summary>
 public class V10 : IChessBot
 {
@@ -132,14 +132,12 @@ public class V10 : IChessBot
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
 																//Much used variables
-			bool isPV = beta - alpha > 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
+			bool notIsPV = beta - alpha <= 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
 
 			//Draw detection
-			if (notRoot && board.IsDraw())
+			if (board.IsDraw())
 				return 0; //slight discouragement of draws.
-			if (board.IsInCheckmate()) // TODO, double check if isincheckmate really isn't worse. Because it generates moves not cached. 
-									   //you can move this below move loop, because if it's checkmate, there aren't going to be any moves anyways, then just do
-									   //if max == -1000000000, and in check, then it must be a mate, because no legal moves.
+			if (board.IsInCheckmate())
 				return ply - 999999;
 
 			//Debug
@@ -164,12 +162,12 @@ public class V10 : IChessBot
 					return max;
 				alpha = Math.Max(alpha, max);
 			}
-			else if (!isPV && !isInCheck)            // pruning of different sorts
+			else if (notIsPV && !isInCheck)            // pruning of different sorts
 			{
 				// Reverse futility pruning
 				int RFPEval = evaluation();
 
-				if (depth <= 6)
+				if (depth <= 6) //6 seems good
 				{
 					// The idea is that the positions eval is so bad that even after adding 140*depth, that
 					//it's still below alpha (so worse than something else we've found), then we can prune branches.
@@ -216,7 +214,7 @@ public class V10 : IChessBot
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 			// Generate legal moves and sort them
-			Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = default;
+			Move bestFoundMove = entry.Item2, goodMove = notRoot ? bestFoundMove : overAllBestMove;
 
 			// Gamestate, checkmate and draws
 			Span<Move> legalmoves = stackalloc Move[218];
@@ -252,7 +250,7 @@ public class V10 : IChessBot
 				board.MakeMove(move);
 
 				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
-				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && !isPV) ? 1 + depth / 8 + moveCount / 8 : 0;
+				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && notIsPV) ? 1 + depth / 8 + moveCount / 8 : 0;
 				//reduction = isPV && reduction > 0 ? 1 : 0;
 
 				if (moveCount == 1 || isQSearch ||
@@ -293,7 +291,7 @@ public class V10 : IChessBot
 						  // Transposition table insertion
 			entry = new(
 				zobristHash,
-				bestFoundMove == default ? entry.Item2 : bestFoundMove,
+				bestFoundMove,
 				max,
 				depth,
 				(byte)(max >= beta ? 3 : max <= oldAlpha ? 2 : 1));

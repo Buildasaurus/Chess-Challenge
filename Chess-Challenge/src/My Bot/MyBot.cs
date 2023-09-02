@@ -218,7 +218,7 @@ public class MyBot : IChessBot
 			if (!notRoot) Console.WriteLine($"info string Bestmove at depth{depth} was for a starter: {overAllBestMove}");//#DEBUG
 
 			// Generate legal moves and sort them
-			Move goodMove = notRoot ? entry.Item2 : overAllBestMove, bestFoundMove = default;
+			Move bestFoundMove = entry.Item2, goodMove = notRoot ? bestFoundMove : overAllBestMove;
 
 			// Gamestate, checkmate and draws
 			Span<Move> legalmoves = stackalloc Move[218];
@@ -295,7 +295,7 @@ public class MyBot : IChessBot
 						  // Transposition table insertion
 			entry = new(
 				zobristHash,
-				bestFoundMove == default ? entry.Item2 : bestFoundMove,
+				bestFoundMove,
 				max,
 				depth,
 				(byte)(max >= beta ? 3 : max <= oldAlpha ? 2 : 1));
