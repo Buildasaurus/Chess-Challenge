@@ -8,6 +8,10 @@ using System.Diagnostics.Contracts;
 /// <summary>
 /// 
 /// Ideas
+/// IIR
+/// LMP
+/// Aspiration windows
+/// The cow opening???
 /// - Kind bot - When winning - go for a draw instead 
 /// - No queen bot - just throw it away and try to win anyways
 /// - scholars mate / trick bot - always go for certain tricks.
@@ -124,23 +128,21 @@ public class MyBot : IChessBot
 		/// <param name="ply">How deep you have made it - rises</param>
 		/// <param name="alpha"></param>
 		/// <param name="beta"></param>
-		/// <param name="color"></param>
-		/// <param name="numExtensions"></param>
 		/// <returns></returns>
 		int negamax(sbyte depth, int ply, int alpha, int beta)
 		{
 			depth = Math.Max(depth, (sbyte)0);
-			//start searching
 
+			//Much used variables
 			int oldAlpha = alpha, movesScored = 0, moveCount = 0, max = -100000000, eval;
+			bool notIsPV = beta - alpha <= 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
 
 			if (depth < 0) Console.WriteLine("smaller than 0"); //#DEBUG
-																//Much used variables
-			bool notIsPV = beta - alpha <= 1, notRoot = ply > 0, isInCheck = board.IsInCheck(), fprune = false;
+			
 
 			//Draw detection
 			if (board.IsDraw())
-				return 0; //slight discouragement of draws.
+				return 50; //slight encouregement of draws.
 			if (board.IsInCheckmate()) 
 				return ply - 999999;
 
@@ -253,9 +255,9 @@ public class MyBot : IChessBot
 
 				board.MakeMove(move);
 
-				// LMR: reduce the depth of the search for moves beyond a certain move count threshold - Can save few tokens here with simpler reduction. not depth/8 only though
+				// LMR: reduce the depth of the search for moves beyond a certain move count threshold 
 				int reduction = (depth >= 4 && moveCount >= 4 && !move.IsCapture && !move.IsPromotion && !isInCheck && notIsPV) ? 1 + depth / 8 + moveCount / 8 : 0;
-				//reduction = isPV && reduction > 0 ? 1 : 0;
+				//reduction = isPV && reduction > 0 ? 1 : 0; TODO TEST this
 
 				if (moveCount == 1 || isQSearch ||
 						// If PV-node / qsearch, search(beta)
@@ -282,9 +284,9 @@ public class MyBot : IChessBot
 					if (!move.IsCapture)
 					{
 						killers[ply] = move;
+						//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
 						historyTable[board.IsWhiteToMove ? 0 : 1, (int)move.MovePieceType, move.TargetSquare.Index] += depth * depth;
 					}
-					//if move causes beta-cutoff, it's nice, so it's "score" is now increased, depending on how early it did the beta-cutoff. yes?
 					break;
 				}
 			}
