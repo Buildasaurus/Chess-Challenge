@@ -97,12 +97,14 @@ public class MyBot : IChessBot
 		/// <returns></returns>
 		int evaluation()
 		{
+			int bishopPairBonus = 0;
 			int middlegame = 0, endgame = 0, gamephase = 0, sideToMove = 2;
 			for (; --sideToMove >= 0;)
 			{
 				for (int piece = -1, square; ++piece < 6;)
 					for (ulong mask = board.GetPieceBitboard((PieceType)piece + 1, sideToMove > 0); mask != 0;)
 					{
+						if (piece == 2 && BitOperations.PopCount(mask) == 2) bishopPairBonus += sideToMove == 1 ? 1200 : -1200;
 						//gamephase goes from 0 to 24, 24 is midgame, 0 is endgame. This bitwise operation has paranthesis as such
 						//gamephase += (0x00042110 >> piece * 4) & 0x0F; So you push "piece" bits out of the way, and then use the lsb.
 
@@ -117,7 +119,7 @@ public class MyBot : IChessBot
 				middlegame *= -1;
 				endgame *= -1;
 			}
-			return (middlegame * gamephase + endgame * (24 - gamephase)) / (board.IsWhiteToMove ? 24 : -24);
+			return (bishopPairBonus + middlegame * gamephase + endgame * (24 - gamephase)) / (board.IsWhiteToMove ? 24 : -24);
 		}
 
 		/// <summary>
