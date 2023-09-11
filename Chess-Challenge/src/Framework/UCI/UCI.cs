@@ -56,16 +56,14 @@ namespace ChessChallenge.UCI
 				}
 			}
 
-			string fen = FenUtility.CurrentFen(board);
-			Console.WriteLine(fen);
+
 		}
 
 		void GoCommand(string[] args)
 		{
 			int wtime = 0, btime = 0;
 			API.Board apiBoard = new API.Board(board);
-			Console.WriteLine(FenUtility.CurrentFen(board));
-			Console.WriteLine(apiBoard.GetFenString());
+
 			for (int i = 0; i < args.Length; i++)
 			{
 				if (args[i] == "wtime")
@@ -76,6 +74,11 @@ namespace ChessChallenge.UCI
 				{
 					btime = Int32.Parse(args[i + 1]);
 				}
+				else if(args[i] == "movetime")
+				{
+					btime = Int32.Parse(args[i + 1]);
+					wtime = btime;
+				}
 			}
 			if (!apiBoard.IsWhiteToMove)
 			{
@@ -85,7 +88,7 @@ namespace ChessChallenge.UCI
 			}
 			Timer timer = new Timer(wtime, btime, 0);
 			API.Move move = bot.Think(apiBoard, timer);
-			Console.WriteLine($"bestmove {move.ToString().Substring(7, move.ToString().Length - 8)}");
+			Console.WriteLine("bestmove " + move.ToString().Split()[^1].Replace("'", ""));
 		}
 
 		void ExecCommand(string line)
