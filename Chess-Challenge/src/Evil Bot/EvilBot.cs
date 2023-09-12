@@ -301,6 +301,7 @@ namespace ChessChallenge.Example
 			counters.Add(0);//#DEBUG
 			int bestEval = 0; //#DEBUG
 			int thinkStart = timer.MillisecondsRemaining; //#DEBUG
+			Console.WriteLine($"info string Time left: {thinkStart}");
 			for (sbyte d = 1; d <= 32; d++) //start depth 2 doesn't gain. Score of MyBot vs EvilBot: 255 - 273 - 290  [0.489] 818
 			{
 				//TODO Aspiration Windows (without looking at Tyrants code pls ;D)
