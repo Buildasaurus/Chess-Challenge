@@ -57,14 +57,10 @@ namespace ChessChallenge.Example
 
 		// Create a transposition table // key, move, score/eval, depth, flag.
 		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
-
-
-		Move overAllBestMove;
-		public Move Think(Board board, Timer timer)
+		int[][] UnpackedPestoTables;
+		public MyBot()
 		{
-
-			//Saves tokens to unpack every time.
-			int[][] UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
+			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 			{
 				int pieceType = 0;
 				return decimal.GetBits(packedTable).Take(3)
@@ -72,6 +68,13 @@ namespace ChessChallenge.Example
 						.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
 					.ToArray();
 			}).ToArray();
+		}
+
+		Move overAllBestMove;
+		public Move Think(Board board, Timer timer)
+		{
+
+
 
 			Console.WriteLine("info string -----NBEW bot thinking----");//#DEBUG
 
