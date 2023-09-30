@@ -58,7 +58,7 @@ namespace ChessChallenge.Example
 		// Create a transposition table // key, move, score/eval, depth, flag.
 		private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
 		int[][] UnpackedPestoTables;
-		public MyBot()
+		public EvilBot()
 		{
 			UnpackedPestoTables = PackedPestoTables.Select(packedTable =>
 			{
