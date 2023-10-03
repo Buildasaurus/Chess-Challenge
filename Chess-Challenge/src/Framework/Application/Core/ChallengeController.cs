@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using static ChessChallenge.Application.Settings;
 using static ChessChallenge.Application.ConsoleHelper;
+using System.Data.SQLite;
+using System.Data;
 
 namespace ChessChallenge.Application
 {
@@ -55,7 +57,7 @@ namespace ChessChallenge.Application
         readonly int tokenCount;
         readonly int debugTokenCount;
         readonly StringBuilder pgns;
-
+        static SQLiteConnection sqlite;
         public ChallengeController()
         {
             Log($"Launching Chess-Challenge version {Settings.Version}");
@@ -74,8 +76,33 @@ namespace ChessChallenge.Application
             botTaskWaitHandle = new AutoResetEvent(false);
 
             StartNewGame(PlayerType.Human, PlayerType.MyBot);
+
+            //connect to openingbook
+            sqlite = new SQLiteConnection("Data Source=C:/Users/jonat/OneDrive - Danmarks Tekniske Universitet/Chess Challenge/chess_games.db");
+
         }
 
+        public static DataTable selectQuery(string fenString)
+        {
+            SQLiteDataAdapter ad;
+            DataTable dt = new DataTable();
+
+            try
+            {
+                SQLiteCommand cmd;
+                sqlite.Open(); // Initiate connection to the db
+                cmd = sqlite.CreateCommand();
+                cmd.CommandText = "SELECT move, count FROM BestMoves WHERE fen = '" + fenString + "'";// Set the passed query
+                ad = new SQLiteDataAdapter(cmd); //executes the query, and saves the data in ad
+                ad.Fill(dt); // Fills the database dt, since it's an object, ref keyword is not needed.
+            }
+            catch (SQLiteException ex)
+            {
+                // Add your exception code here.
+            }
+            sqlite.Close();
+            return dt;
+        }
         public void StartNewGame(PlayerType whiteType, PlayerType blackType)
         {
             // End any ongoing game

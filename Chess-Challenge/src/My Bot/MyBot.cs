@@ -4,6 +4,10 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Diagnostics.Contracts;
+using ChessChallenge.Application;
+using System.Data;
+using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
 
 /// <summary>
 /// 
@@ -64,7 +68,7 @@ public class MyBot : IChessBot
 								94, 281, 297, 512, 936, 0}; // Endgame
 
 	// Create a transposition table // key, move, score/eval, depth, flag.
-	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000];
+	private readonly (ulong, Move, int, sbyte, byte)[] transpositionTable = new (ulong, Move, int, sbyte, byte)[0x400000]; 
 	int[][] UnpackedPestoTables;
 	public MyBot()
 	{
@@ -76,15 +80,85 @@ public class MyBot : IChessBot
 					.Select(square => (int)((sbyte)square * 1.461) + PieceValues[pieceType++]))
 				.ToArray();
 		}).ToArray();
+		
 	}
-
+	class pair
+	{
+		public pair(string a, int b)
+		{
+			move = a;
+			count = b;
+		}
+		public string move;
+		public long count;
+    }
 	Move overAllBestMove;
+	bool ischar(char character)
+	{
+		return (int)character >= (int)'a' && (int)character <= (int)'z';
+    }
 	public Move Think(Board board, Timer timer)
 	{
+		Console.WriteLine("movecount is : " + board.GameMoveHistory.Length);
+		if (board.GameMoveHistory.Length < 12)
+		{
+			long totalmoves = 0;
+			List<pair> pairs = new List<pair>();
+			string fenstring = board.GetFenString();
+			if(!fenstring.Contains("-"))
+			{
+				for(int i = fenstring.Length-1; i>=0; i--)
+				{
+					if (ischar(fenstring[i]))
+					{
+						fenstring = fenstring.Replace(fenstring[i] + "" + fenstring[i+1], "-");
+                        break;
+                    }
+                }
+			}
 
+            DataTable dt = ChallengeController.selectQuery(fenstring);
+			Console.WriteLine($"at fen string {board.GetFenString()} there are {dt.Rows.Count} rows");
+            foreach (DataRow row in dt.Rows)
+            {
+				pairs.Add(new pair("", 1));
+				int i = 0;
+                //new input at same fen string, so new move, and new count eg a row is (fen, move, count)
+                foreach (DataColumn column in dt.Columns)
+                {
+                    Console.WriteLine($"{column.ColumnName} + {column.ColumnName.GetType()}: {row[column]} + {row[column].GetType()}");
+                    Console.WriteLine(row[column].GetType() == "".GetType());
 
+                    if (row[column].GetType() == "".GetType())
+					{
+						pairs[^1].move = (string)row[column];
+                    }
+                    else
+					{
+						long count = (long)row[column];
+						totalmoves += count;
+                        pairs[^1].count = count;
+                    }
+                    i++;
+					//looping through (move, count) in the same row, first move, then count.
+                }
+            }
+            Random rand = new Random();
+			long randnumber = (long)(rand.NextDouble() * totalmoves);
+            Console.WriteLine(randnumber);
+            foreach (pair pair in pairs)
+			{
+				Console.WriteLine(totalmoves + " " + pair.count);
+				totalmoves -= pair.count;
+				if(totalmoves <= randnumber)
+				{
+					Console.WriteLine(pair.move);
+					return new Move(pair.move, board);
+				}
+			}
+        }
 
-		Console.WriteLine("info string -----NBEW bot thinking----");//#DEBUG
+        Console.WriteLine("info string -----NBEW bot thinking----");//#DEBUG
 
 		// History table definition
 		int[,,] historyTable = new int[2, 7, 64];
