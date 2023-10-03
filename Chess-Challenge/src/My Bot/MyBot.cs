@@ -130,8 +130,7 @@ public class MyBot : IChessBot
                 foreach (DataColumn column in dt.Columns)
                 {
 					//looping through (move, count) in the same row, first move, then count.
-					Console.WriteLine($"{column.ColumnName} + {column.ColumnName.GetType()}: {row[column]} + {row[column].GetType()}");
-                    Console.WriteLine(row[column].GetType() == "".GetType());
+					Console.WriteLine($"{column.ColumnName}: {row[column]}");
 
                     if (row[column].GetType() == "".GetType())
 					{
@@ -153,14 +152,14 @@ public class MyBot : IChessBot
 			}
 			Random rand = new Random();
 			long randnumber = (long)(rand.NextDouble() * totalmoves);
-            Console.WriteLine(randnumber);
+
+            Console.WriteLine($"random number from 0 to {totalmoves} is {randnumber}");
             foreach (pair pair in pairs)
 			{
-				Console.WriteLine(totalmoves + " " + pair.count);
 				totalmoves -= pair.count;
 				if(totalmoves <= randnumber)
 				{
-					Console.WriteLine(pair.move);
+					Console.WriteLine($"The move played will be {pair.move}");
 					return new Move(pair.move, board);
 				}
 			}
