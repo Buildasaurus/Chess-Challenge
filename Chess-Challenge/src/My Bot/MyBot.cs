@@ -84,6 +84,9 @@ public class MyBot : IChessBot
 	}
 	class pair
 	{
+		public pair()
+		{
+		}
 		public pair(string a, int b)
 		{
 			move = a;
@@ -121,29 +124,34 @@ public class MyBot : IChessBot
 			Console.WriteLine($"at fen string {board.GetFenString()} there are {dt.Rows.Count} rows");
             foreach (DataRow row in dt.Rows)
             {
-				pairs.Add(new pair("", 1));
+				pair newPair = new pair();
 				int i = 0;
                 //new input at same fen string, so new move, and new count eg a row is (fen, move, count)
                 foreach (DataColumn column in dt.Columns)
                 {
-                    Console.WriteLine($"{column.ColumnName} + {column.ColumnName.GetType()}: {row[column]} + {row[column].GetType()}");
+					//looping through (move, count) in the same row, first move, then count.
+					Console.WriteLine($"{column.ColumnName} + {column.ColumnName.GetType()}: {row[column]} + {row[column].GetType()}");
                     Console.WriteLine(row[column].GetType() == "".GetType());
 
                     if (row[column].GetType() == "".GetType())
 					{
-						pairs[^1].move = (string)row[column];
+						newPair.move = (string)row[column];
                     }
                     else
 					{
 						long count = (long)row[column];
-						totalmoves += count;
-                        pairs[^1].count = count;
+						newPair.count = count;
                     }
                     i++;
-					//looping through (move, count) in the same row, first move, then count.
-                }
-            }
-            Random rand = new Random();
+				}
+				//adding the pair to the list, if it is played enough.
+				if (newPair.count > 30)
+				{
+					pairs.Add(newPair);
+					totalmoves += newPair.count;
+				}
+			}
+			Random rand = new Random();
 			long randnumber = (long)(rand.NextDouble() * totalmoves);
             Console.WriteLine(randnumber);
             foreach (pair pair in pairs)

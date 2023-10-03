@@ -78,7 +78,7 @@ namespace ChessChallenge.Application
             StartNewGame(PlayerType.Human, PlayerType.MyBot);
 
             //connect to openingbook
-            sqlite = new SQLiteConnection("Data Source=C:/Users/jonat/OneDrive - Danmarks Tekniske Universitet/Chess Challenge/chess_games.db");
+            sqlite = new SQLiteConnection("Data Source=chess_games.db");
 
         }
 
