@@ -103,7 +103,7 @@ public class MyBot : IChessBot
 	public Move Think(Board board, Timer timer)
 	{
         Console.WriteLine("movecount is : " + board.GameMoveHistory.Length);
-		if (board.GameMoveHistory.Length < 12)
+		if (board.GameMoveHistory.Length < 20)
 		{
             Console.WriteLine($"original fen string {board.GetFenString()}");
             long totalmoves = 0;
