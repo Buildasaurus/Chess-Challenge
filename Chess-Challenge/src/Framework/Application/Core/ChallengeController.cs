@@ -77,8 +77,10 @@ namespace ChessChallenge.Application
 
             StartNewGame(PlayerType.Human, PlayerType.MyBot);
 
+            Console.WriteLine("Connecting to database");
             //connect to openingbook
             sqlite = new SQLiteConnection("Data Source=chess_games.db");
+            Console.WriteLine("Connected to database");
 
         }
 

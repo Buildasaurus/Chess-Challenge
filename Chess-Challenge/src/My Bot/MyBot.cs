@@ -102,26 +102,39 @@ public class MyBot : IChessBot
     }
 	public Move Think(Board board, Timer timer)
 	{
-		Console.WriteLine("movecount is : " + board.GameMoveHistory.Length);
+        Console.WriteLine("movecount is : " + board.GameMoveHistory.Length);
 		if (board.GameMoveHistory.Length < 12)
 		{
-			long totalmoves = 0;
+            Console.WriteLine($"original fen string {board.GetFenString()}");
+            long totalmoves = 0;
 			List<pair> pairs = new List<pair>();
 			string fenstring = board.GetFenString();
-			if(!fenstring.Contains("-"))
+			//removing en passent target square, except if it is a legal move.
+			Move[] legalmoves = board.GetLegalMoves();
+			bool canEnPassent = false;
+			foreach (Move move in legalmoves)
+				if (move.IsEnPassant)
+				{
+                    canEnPassent = true;
+					Console.WriteLine("You can enpassent");
+                }
+
+            if (!(fenstring.Contains("-") || canEnPassent))
 			{
-				for(int i = fenstring.Length-1; i>=0; i--)
+                Console.WriteLine($"fen string does not contain '-'");
+                for (int i = fenstring.Length-1; i>=0; i--)
 				{
 					if (ischar(fenstring[i]))
 					{
-						fenstring = fenstring.Replace(fenstring[i] + "" + fenstring[i+1], "-");
+                        Console.WriteLine($"the char is {fenstring[i]}.");
+                        fenstring = fenstring.Replace(fenstring[i] + "" + fenstring[i+1], "-");
                         break;
                     }
                 }
 			}
 
             DataTable dt = ChallengeController.selectQuery(fenstring);
-			Console.WriteLine($"at fen string {board.GetFenString()} there are {dt.Rows.Count} rows");
+			Console.WriteLine($"at fen string {fenstring} there are {dt.Rows.Count} rows");
             foreach (DataRow row in dt.Rows)
             {
 				pair newPair = new pair();
