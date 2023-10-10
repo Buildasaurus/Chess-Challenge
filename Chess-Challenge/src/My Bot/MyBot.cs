@@ -8,6 +8,7 @@ using ChessChallenge.Application;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 /// <summary>
 /// 
@@ -132,49 +133,56 @@ public class MyBot : IChessBot
                     }
                 }
 			}
-
-            DataTable dt = ChallengeController.selectQuery(fenstring);
-			Console.WriteLine($"at fen string {fenstring} there are {dt.Rows.Count} rows");
-            foreach (DataRow row in dt.Rows)
-            {
-				pair newPair = new pair();
-				int i = 0;
-                //new input at same fen string, so new move, and new count eg a row is (fen, move, count)
-                foreach (DataColumn column in dt.Columns)
-                {
-					//looping through (move, count) in the same row, first move, then count.
-					Console.WriteLine($"{column.ColumnName}: {row[column]}");
-
-                    if (row[column].GetType() == "".GetType())
-					{
-						newPair.move = (string)row[column];
-                    }
-                    else
-					{
-						long count = (long)row[column];
-						newPair.count = count;
-                    }
-                    i++;
-				}
-				//adding the pair to the list, if it is played enough.
-				if (newPair.count > 30)
+			bool worked = false;
+			try
+			{
+				DataTable dt = ChallengeController.selectQuery(fenstring);
+				Console.WriteLine($"at fen string {fenstring} there are {dt.Rows.Count} rows");
+				foreach (DataRow row in dt.Rows)
 				{
-					pairs.Add(newPair);
-					totalmoves += newPair.count;
+					pair newPair = new pair();
+					int i = 0;
+					//new input at same fen string, so new move, and new count eg a row is (fen, move, count)
+					foreach (DataColumn column in dt.Columns)
+					{
+						//looping through (move, count) in the same row, first move, then count.
+						Console.WriteLine($"{column.ColumnName}: {row[column]}");
+
+						if (row[column].GetType() == "".GetType())
+						{
+							newPair.move = (string)row[column];
+						}
+						else
+						{
+							long count = (long)row[column];
+							newPair.count = count;
+						}
+						i++;
+					}
+					//adding the pair to the list, if it is played enough.
+					if (newPair.count > 30)
+					{
+						pairs.Add(newPair);
+						totalmoves += newPair.count;
+					}
+				}
+				Random rand = new Random();
+				long randnumber = (long)(rand.NextDouble() * totalmoves);
+
+				Console.WriteLine($"random number from 0 to {totalmoves} is {randnumber}");
+				foreach (pair pair in pairs)
+				{
+					totalmoves -= pair.count;
+					if (totalmoves <= randnumber)
+					{
+						Console.WriteLine($"The move played will be {pair.move}");
+						return new Move(pair.move, board);
+					}
 				}
 			}
-			Random rand = new Random();
-			long randnumber = (long)(rand.NextDouble() * totalmoves);
-
-            Console.WriteLine($"random number from 0 to {totalmoves} is {randnumber}");
-            foreach (pair pair in pairs)
+			catch
 			{
-				totalmoves -= pair.count;
-				if(totalmoves <= randnumber)
-				{
-					Console.WriteLine($"The move played will be {pair.move}");
-					return new Move(pair.move, board);
-				}
+				Console.WriteLine("Error when trying to connect to DB. Breaking out and continuing");
 			}
         }
 
